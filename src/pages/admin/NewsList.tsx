@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -21,6 +20,8 @@ const NewsList = () => {
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [currentNews, setCurrentNews] = useState<NewsItem | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [newNewsData, setNewNewsData] = useState<Partial<NewsItem>>({
     title: '',
     excerpt: '',
@@ -29,6 +30,15 @@ const NewsList = () => {
     source: '',
   });
   const { toast } = useToast();
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+      setNewNewsData({ ...newNewsData, imageUrl: URL.createObjectURL(file) });
+    }
+  };
 
   const handleAddNews = () => {
     if (!newNewsData.title || !newNewsData.excerpt || !newNewsData.category) {
@@ -204,15 +214,25 @@ const NewsList = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">URL da imagem</Label>
-                <Input
-                  id="imageUrl"
-                  value={newNewsData.imageUrl || ''}
-                  onChange={(e) =>
-                    setNewNewsData({ ...newNewsData, imageUrl: e.target.value })
-                  }
-                  placeholder="https://exemplo.com/imagem.jpg"
-                />
+                <Label htmlFor="image">Imagem</Label>
+                <div className="flex flex-col gap-4">
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="cursor-pointer"
+                  />
+                  {imagePreview && (
+                    <div className="relative w-full h-48">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="source">Fonte</Label>
