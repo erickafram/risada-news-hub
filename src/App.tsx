@@ -11,9 +11,12 @@ import NotFound from "./pages/NotFound";
 import CategoryPage from "./pages/CategoryPage";
 import ArticlePage from "./pages/ArticlePage";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import CategoriesList from "./pages/admin/CategoriesList";
+import CategoryForm from "./pages/admin/CategoryForm";
 import NewsList from "./pages/admin/NewsList";
+import ArticleForm from "./pages/admin/ArticleForm";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +32,7 @@ const App = () => (
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/article/:id" element={<ArticlePage />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={
@@ -41,9 +45,29 @@ const App = () => (
                 <CategoriesList />
               </ProtectedRoute>
             } />
+            <Route path="/admin/categories/new" element={
+              <ProtectedRoute requireAdmin={true}>
+                <CategoryForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/categories/edit/:id" element={
+              <ProtectedRoute requireAdmin={true}>
+                <CategoryForm />
+              </ProtectedRoute>
+            } />
             <Route path="/admin/news" element={
               <ProtectedRoute requireAdmin={true}>
                 <NewsList />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/news/new" element={
+              <ProtectedRoute requireAdmin={true}>
+                <ArticleForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/news/edit/:id" element={
+              <ProtectedRoute requireAdmin={true}>
+                <ArticleForm />
               </ProtectedRoute>
             } />
             

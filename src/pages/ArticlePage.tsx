@@ -1,22 +1,71 @@
 
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle } from 'lucide-react';
-import { mockTechnologyNews, mockBusinessNews, mockPoliticsNews, mockFeaturedNews } from '@/data/mockNewsData';
+import { Heart, MessageCircle, Loader2, ArrowLeft } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
+interface Article {
+  id: number;
+  title: string;
+  slug: string;
+  content: string;
+  summary: string;
+  featuredImage: string;
+  published: boolean;
+  publishedAt: string;
+  createdAt: string;
+  updatedAt: string;
+  category?: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  author?: {
+    id: number;
+    fullName: string;
+  };
+}
 
 const ArticlePage = () => {
   const { id } = useParams();
-  const allNews = [...mockFeaturedNews, ...mockTechnologyNews, ...mockBusinessNews, ...mockPoliticsNews];
-  const article = allNews.find(news => news.id === id);
+  const [article, setArticle] = useState<Article | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(Math.floor(Math.random() * 100));
+  const [likesCount, setLikesCount] = useState(0);
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState<Array<{ text: string; date: Date }>>([]);
+  
+  useEffect(() => {
+    const fetchArticle = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/articles/${id}`);
+        
+        if (!response.ok) {
+          throw new Error('Artigo não encontrado');
+        }
+        
+        const data = await response.json();
+        setArticle(data);
+        setLikesCount(Math.floor(Math.random() * 50)); // Simulando contagem de likes
+      } catch (error) {
+        console.error('Erro ao buscar artigo:', error);
+        setError(error instanceof Error ? error.message : 'Erro ao buscar artigo');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (id) {
+      fetchArticle();
+    }
+  }, [id]);
 
   const handleLike = () => {
     setLiked(!liked);
@@ -31,11 +80,30 @@ const ArticlePage = () => {
     }
   };
 
-  if (!article) {
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[50vh]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <h2 className="text-xl font-medium">Carregando artigo...</h2>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  if (error || !article) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-center text-gray-800">Article not found</h1>
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">Artigo não encontrado</h1>
+            <p className="text-gray-600 mb-6">{error || 'O artigo solicitado não está disponível.'}</p>
+            <Link to="/" className="inline-flex items-center text-primary hover:underline">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para a página inicial
+            </Link>
+          </div>
         </div>
       </Layout>
     );
@@ -44,34 +112,64 @@ const ArticlePage = () => {
   return (
     <Layout>
       <article className="container mx-auto px-4 py-8 animate-fade-in">
+        <div className="max-w-4xl mx-auto mb-6">
+          <Link to="/" className="inline-flex items-center text-primary hover:underline">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para a página inicial
+          </Link>
+        </div>
+        
         <Card className="overflow-hidden border-0 shadow-lg max-w-4xl mx-auto bg-white/80 backdrop-blur-sm">
-          <div className="relative h-96">
-            <img
-              src={article.imageUrl}
-              alt={article.title}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </div>
+          {article.featuredImage && (
+            <div className="relative h-96">
+              <img
+                src={article.featuredImage}
+                alt={article.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </div>
+          )}
           <div className="p-8">
-            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <div className="flex items-center gap-2 mb-4">
+              {article.category && (
+                <Link to={`/category/${article.category.slug}`}>
+                  <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
+                    {article.category.name}
+                  </Badge>
+                </Link>
+              )}
+              <span className="text-sm text-gray-500">
+                {new Date(article.publishedAt || article.createdAt).toLocaleDateString('pt-BR', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </span>
+            </div>
+            
+            <h1 className="text-4xl font-bold mb-4 text-gray-800">
               {article.title}
             </h1>
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-sm text-gray-600">
-                Published on {new Date(article.publishedAt).toLocaleDateString()}
-              </span>
-              <span className="text-sm font-medium text-purple-600">
-                Source: {article.source}
-              </span>
-            </div>
-            <p className="text-lg leading-relaxed text-gray-700 mb-6">
-              {article.excerpt}
-            </p>
-            <div className="prose max-w-none text-gray-700 mb-8">
-              <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+            
+            {article.author && (
+              <div className="flex items-center mb-6">
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold mr-3">
+                  {article.author.fullName.charAt(0)}
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  Por {article.author.fullName}
+                </span>
+              </div>
+            )}
+            
+            {article.summary && (
+              <p className="text-lg leading-relaxed text-gray-700 mb-6 font-medium italic">
+                {article.summary}
               </p>
-            </div>
+            )}
+            
+            <div className="prose max-w-none text-gray-700 mb-8" 
+              dangerouslySetInnerHTML={{ __html: article.content }}
+            />
 
             <div className="flex items-center gap-6 mb-8">
               <Button

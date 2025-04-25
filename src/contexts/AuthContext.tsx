@@ -2,10 +2,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
-  id: string;
+  id: number;
+  fullName: string;
   email: string;
-  name: string;
-  isAdmin: boolean;
+  phone: string;
+  role: 'reader' | 'admin';
 }
 
 interface AuthContextType {
@@ -14,6 +15,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  token: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,52 +24,70 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
   isAuthenticated: false,
   isAdmin: false,
+  token: null,
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('token');
+    if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser));
+      setToken(storedToken);
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // For demo purposes - in a real app this would verify against a backend
-    if (email === 'admin@example.com' && password === 'admin123') {
-      const user = {
-        id: '1',
-        email: 'admin@example.com',
-        name: 'Admin User',
-        isAdmin: true,
-      };
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+      const { user, token } = data;
+
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
       setUser(user);
+      setToken(token);
       return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     setUser(null);
+    setToken(null);
   };
 
-  const isAuthenticated = !!user;
-  const isAdmin = user?.isAdmin || false;
+  const isAuthenticated = !!user && !!token;
+  const isAdmin = user?.role === 'admin' || false;
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isAdmin }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isAdmin, token }}>
       {children}
     </AuthContext.Provider>
   );

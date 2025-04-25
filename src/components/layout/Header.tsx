@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Menu, X, LogIn } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import logoImage from '@/assets/images/logo.png';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -30,10 +31,10 @@ const Header = () => {
 
   return (
     <header className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg fixed top-0 left-0 right-0 z-50">
-      <div className="container mx-auto px-4 py-3">
+      <div className="container mx-auto px-4 py-0">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-3xl font-bold text-white hover:scale-105 transition-transform">
-            Risada<span className="text-pink-300">Fun</span>
+          <Link to="/" className="hover:scale-105 transition-transform flex items-center">
+            <img src={logoImage} alt="Risada News Hub Logo" className="h-16" />
           </Link>
 
           <nav className="hidden md:flex items-center space-x-8">

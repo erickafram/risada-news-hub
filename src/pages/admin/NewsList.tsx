@@ -1,352 +1,263 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
-import { mockFeaturedNews, mockBusinessNews, mockTechnologyNews, mockPoliticsNews } from '@/data/mockNewsData';
-import { NewsItem } from '@/components/news/NewsCard';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from '@/components/ui/drawer';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Pencil, Trash } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Pencil, Trash, Plus, Loader2, Eye } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface Article {
+  id: number;
+  title: string;
+  slug: string;
+  content: string;
+  summary: string;
+  featuredImage: string;
+  published: boolean;
+  publishedAt: string;
+  views: number;
+  createdAt: string;
+  updatedAt: string;
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  author: {
+    id: number;
+    fullName: string;
+  };
+}
 
 const NewsList = () => {
-  const [allNews, setAllNews] = useState<NewsItem[]>([
-    ...mockFeaturedNews,
-    ...mockTechnologyNews,
-    ...mockBusinessNews,
-    ...mockPoliticsNews,
-  ]);
-  const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
-  const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
-  const [currentNews, setCurrentNews] = useState<NewsItem | null>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
-  const [newNewsData, setNewNewsData] = useState<Partial<NewsItem>>({
-    title: '',
-    excerpt: '',
-    category: '',
-    imageUrl: '',
-    source: '',
-  });
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState<number | null>(null);
   const { toast } = useToast();
+  const { token } = useAuth();
+  const navigate = useNavigate();
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
-      setNewNewsData({ ...newNewsData, imageUrl: URL.createObjectURL(file) });
-    }
-  };
+  useEffect(() => {
+    fetchArticles();
+  }, []);
 
-  const handleAddNews = () => {
-    if (!newNewsData.title || !newNewsData.excerpt || !newNewsData.category) {
-      toast({
-        title: "Campos incompletos",
-        description: "Preencha todos os campos obrigatórios.",
-        variant: "destructive"
+  const fetchArticles = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:3001/api/articles/admin/all', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
-      return;
+
+      if (!response.ok) {
+        throw new Error('Falha ao buscar artigos');
+      }
+
+      const data = await response.json();
+      setArticles(data.articles || []);
+    } catch (error) {
+      console.error('Erro ao buscar artigos:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar os artigos',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
     }
-    
-    const newNews: NewsItem = {
-      id: `news-${Date.now()}`,
-      title: newNewsData.title || '',
-      excerpt: newNewsData.excerpt || '',
-      category: newNewsData.category || '',
-      imageUrl: newNewsData.imageUrl || 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b',
-      publishedAt: new Date().toISOString(),
-      source: newNewsData.source || 'Admin',
-      likes: 0,
-      comments: 0,
-    };
-    
-    setAllNews([newNews, ...allNews]);
-    setIsAddDrawerOpen(false);
-    setNewNewsData({
-      title: '',
-      excerpt: '',
-      category: '',
-      imageUrl: '',
-      source: '',
-    });
-    
-    toast({
-      title: "Notícia adicionada",
-      description: "A notícia foi adicionada com sucesso.",
-    });
   };
 
-  const handleEditNews = () => {
-    if (!currentNews) return;
-    
-    setAllNews(
-      allNews.map((news) =>
-        news.id === currentNews.id ? currentNews : news
-      )
-    );
-    
-    setIsEditDrawerOpen(false);
-    toast({
-      title: "Notícia atualizada",
-      description: "A notícia foi atualizada com sucesso.",
-    });
+  const confirmDelete = (id: number) => {
+    setArticleToDelete(id);
+    setDeleteDialogOpen(true);
   };
 
-  const handleDeleteNews = (id: string) => {
-    setAllNews(allNews.filter((news) => news.id !== id));
-    toast({
-      title: "Notícia removida",
-      description: "A notícia foi removida com sucesso.",
-    });
+  const handleDeleteArticle = async () => {
+    if (!articleToDelete) return;
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/articles/${articleToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao excluir artigo');
+      }
+
+      // Atualizar a lista de artigos
+      setArticles(articles.filter(article => article.id !== articleToDelete));
+      
+      toast({
+        title: 'Artigo excluído',
+        description: 'O artigo foi excluído com sucesso',
+      });
+    } catch (error) {
+      console.error('Erro ao excluir artigo:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível excluir o artigo',
+        variant: 'destructive'
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setArticleToDelete(null);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
   };
 
   return (
     <AdminLayout>
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Gerenciar Notícias</h1>
-          <Button onClick={() => setIsAddDrawerOpen(true)}>Nova Notícia</Button>
+          <h1 className="text-2xl font-bold">Gerenciar Artigos</h1>
+          <Button onClick={() => navigate('/admin/news/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Artigo
+          </Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-4">Título</th>
-                <th className="text-left py-3 px-4">Categoria</th>
-                <th className="text-left py-3 px-4">Data</th>
-                <th className="text-right py-3 px-4">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allNews.map((news) => (
-                <tr key={news.id} className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src={news.imageUrl}
-                        alt={news.title}
-                        className="w-10 h-10 object-cover rounded"
-                      />
-                      <span className="font-medium line-clamp-1">{news.title}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">{news.category}</td>
-                  <td className="py-3 px-4">
-                    {new Date(news.publishedAt).toLocaleDateString()}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-1"
-                        onClick={() => {
-                          setCurrentNews(news);
-                          setIsEditDrawerOpen(true);
-                        }}
-                      >
-                        <Pencil className="w-4 h-4" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="flex items-center gap-1"
-                        onClick={() => handleDeleteNews(news.id)}
-                      >
-                        <Trash className="w-4 h-4" />
-                        Excluir
-                      </Button>
-                    </div>
-                  </td>
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : articles.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Nenhum artigo encontrado.</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => navigate('/admin/news/new')}
+            >
+              Criar primeiro artigo
+            </Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4">Título</th>
+                  <th className="text-left py-3 px-4">Categoria</th>
+                  <th className="text-left py-3 px-4">Status</th>
+                  <th className="text-left py-3 px-4">Visualizações</th>
+                  <th className="text-left py-3 px-4">Data</th>
+                  <th className="text-right py-3 px-4">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {articles.map((article) => (
+                  <tr key={article.id} className="border-b hover:bg-gray-50">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center">
+                        {article.featuredImage ? (
+                          <img
+                            src={article.featuredImage}
+                            alt={article.title}
+                            className="w-10 h-10 rounded object-cover mr-3"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://placehold.co/100x100?text=Sem+Imagem';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded bg-gray-200 flex items-center justify-center mr-3">
+                            <span className="text-gray-500 text-xs">Sem img</span>
+                          </div>
+                        )}
+                        <span className="font-medium truncate max-w-xs">{article.title}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">{article.category?.name || 'Sem categoria'}</td>
+                    <td className="py-3 px-4">
+                      {article.published ? (
+                        <Badge variant="success">Publicado</Badge>
+                      ) : (
+                        <Badge variant="secondary">Rascunho</Badge>
+                      )}
+                    </td>
+                    <td className="py-3 px-4">{article.views}</td>
+                    <td className="py-3 px-4">
+                      {article.publishedAt ? formatDate(article.publishedAt) : formatDate(article.createdAt)}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={() => window.open(`/article/${article.slug}`, '_blank')}
+                        >
+                          <Eye className="w-4 h-4" />
+                          Ver
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={() => navigate(`/admin/news/edit/${article.id}`)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={() => confirmDelete(article.id)}
+                        >
+                          <Trash className="w-4 h-4" />
+                          Excluir
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Add News Drawer */}
-      <Drawer open={isAddDrawerOpen} onOpenChange={setIsAddDrawerOpen}>
-        <DrawerContent>
-          <div className="container max-w-lg mx-auto p-6">
-            <DrawerHeader>
-              <DrawerTitle>Adicionar Nova Notícia</DrawerTitle>
-              <DrawerDescription>
-                Preencha os campos para criar uma nova notícia.
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Título</Label>
-                <Input
-                  id="title"
-                  value={newNewsData.title || ''}
-                  onChange={(e) =>
-                    setNewNewsData({ ...newNewsData, title: e.target.value })
-                  }
-                  placeholder="Título da notícia"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="excerpt">Resumo</Label>
-                <Textarea
-                  id="excerpt"
-                  value={newNewsData.excerpt || ''}
-                  onChange={(e) =>
-                    setNewNewsData({ ...newNewsData, excerpt: e.target.value })
-                  }
-                  placeholder="Breve resumo da notícia"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Categoria</Label>
-                <Input
-                  id="category"
-                  value={newNewsData.category || ''}
-                  onChange={(e) =>
-                    setNewNewsData({ ...newNewsData, category: e.target.value })
-                  }
-                  placeholder="Categoria da notícia"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="image">Imagem</Label>
-                <div className="flex flex-col gap-4">
-                  <Input
-                    id="image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="cursor-pointer"
-                  />
-                  {imagePreview && (
-                    <div className="relative w-full h-48">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full h-full object-cover rounded-md"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="source">Fonte</Label>
-                <Input
-                  id="source"
-                  value={newNewsData.source || ''}
-                  onChange={(e) =>
-                    setNewNewsData({ ...newNewsData, source: e.target.value })
-                  }
-                  placeholder="Fonte da notícia"
-                />
-              </div>
-            </div>
-            <DrawerFooter>
-              <Button onClick={handleAddNews}>Adicionar Notícia</Button>
-              <Button variant="outline" onClick={() => setIsAddDrawerOpen(false)}>
-                Cancelar
-              </Button>
-            </DrawerFooter>
-          </div>
-        </DrawerContent>
-      </Drawer>
-
-      {/* Edit News Drawer */}
-      <Drawer open={isEditDrawerOpen} onOpenChange={setIsEditDrawerOpen}>
-        <DrawerContent>
-          <div className="container max-w-lg mx-auto p-6">
-            <DrawerHeader>
-              <DrawerTitle>Editar Notícia</DrawerTitle>
-              <DrawerDescription>
-                Modifique os campos da notícia selecionada.
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-title">Título</Label>
-                <Input
-                  id="edit-title"
-                  value={currentNews?.title || ''}
-                  onChange={(e) =>
-                    setCurrentNews(
-                      currentNews
-                        ? { ...currentNews, title: e.target.value }
-                        : null
-                    )
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-excerpt">Resumo</Label>
-                <Textarea
-                  id="edit-excerpt"
-                  value={currentNews?.excerpt || ''}
-                  onChange={(e) =>
-                    setCurrentNews(
-                      currentNews
-                        ? { ...currentNews, excerpt: e.target.value }
-                        : null
-                    )
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-category">Categoria</Label>
-                <Input
-                  id="edit-category"
-                  value={currentNews?.category || ''}
-                  onChange={(e) =>
-                    setCurrentNews(
-                      currentNews
-                        ? { ...currentNews, category: e.target.value }
-                        : null
-                    )
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-imageUrl">URL da imagem</Label>
-                <Input
-                  id="edit-imageUrl"
-                  value={currentNews?.imageUrl || ''}
-                  onChange={(e) =>
-                    setCurrentNews(
-                      currentNews
-                        ? { ...currentNews, imageUrl: e.target.value }
-                        : null
-                    )
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-source">Fonte</Label>
-                <Input
-                  id="edit-source"
-                  value={currentNews?.source || ''}
-                  onChange={(e) =>
-                    setCurrentNews(
-                      currentNews
-                        ? { ...currentNews, source: e.target.value }
-                        : null
-                    )
-                  }
-                />
-              </div>
-            </div>
-            <DrawerFooter>
-              <Button onClick={handleEditNews}>Salvar Alterações</Button>
-              <Button variant="outline" onClick={() => setIsEditDrawerOpen(false)}>
-                Cancelar
-              </Button>
-            </DrawerFooter>
-          </div>
-        </DrawerContent>
-      </Drawer>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O artigo será permanentemente excluído.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteArticle}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };

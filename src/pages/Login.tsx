@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { AlertCircle } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -27,7 +28,14 @@ const Login = () => {
           title: 'Login bem-sucedido',
           description: 'Você foi autenticado com sucesso.',
         });
-        navigate('/admin');
+        
+        // Redirecionar com base no papel do usuário
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        if (userData.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
       } else {
         toast({
           title: 'Erro de autenticação',
@@ -83,9 +91,13 @@ const Login = () => {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-gray-500">
-            Use admin@example.com / admin123 para acessar
+        <CardFooter className="flex flex-col space-y-2 items-center">
+          <div className="flex items-center text-sm text-amber-600 bg-amber-50 p-2 rounded-md w-full">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            <p>Usuário admin: admin@risadanews.com / admin123</p>
+          </div>
+          <p className="text-sm text-gray-500 w-full text-center">
+            Não tem uma conta? <Link to="/register" className="text-blue-600 hover:underline">Registre-se</Link>
           </p>
         </CardFooter>
       </Card>
