@@ -1,13 +1,16 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Menu, X } from 'lucide-react';
+import { Search, Menu, X, LogIn } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -26,7 +29,7 @@ const Header = () => {
   ];
 
   return (
-    <header className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg">
+    <header className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <Link to="/" className="text-3xl font-bold text-white hover:scale-105 transition-transform">
@@ -58,6 +61,14 @@ const Header = () => {
                 <Search className="h-5 w-5" />
               </Button>
             </form>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white"
+              onClick={() => navigate('/login')}
+            >
+              <LogIn className="h-5 w-5" />
+            </Button>
           </div>
 
           <Button
@@ -97,6 +108,14 @@ const Header = () => {
                   {category.name}
                 </Link>
               ))}
+              <Link
+                to="/login"
+                className="text-white hover:text-pink-200 transition-colors py-1 flex items-center gap-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <LogIn className="h-5 w-5" />
+                Login
+              </Link>
             </nav>
           </div>
         )}

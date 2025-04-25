@@ -11,7 +11,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <Header />
-      <main className="flex-grow animate-fade-in">{children}</main>
+      <main className="flex-grow animate-fade-in pt-20">{children}</main>
       <Footer />
     </div>
   );
