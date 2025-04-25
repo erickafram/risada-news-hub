@@ -14,60 +14,52 @@ const Header = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Searching for:', searchQuery);
-    // In a real app, you would implement search functionality here
   };
 
   const categories = [
-    { name: 'Top Stories', path: '/' },
-    { name: 'Technology', path: '/category/technology' },
-    { name: 'Business', path: '/category/business' },
-    { name: 'Politics', path: '/category/politics' },
-    { name: 'Health', path: '/category/health' },
     { name: 'Entertainment', path: '/category/entertainment' },
-    { name: 'Sports', path: '/category/sports' },
+    { name: 'Gaming', path: '/category/gaming' },
+    { name: 'Movies', path: '/category/movies' },
+    { name: 'Music', path: '/category/music' },
+    { name: 'Celebrity', path: '/category/celebrity' },
+    { name: 'Lifestyle', path: '/category/lifestyle' },
   ];
 
   return (
-    <header className="bg-risada shadow-md">
-      <div className="container mx-auto px-4 py-4">
+    <header className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg">
+      <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link to="/" className="text-2xl font-bold text-white">
-              Risada<span className="text-risada-accent">News</span>
-            </Link>
-          </div>
+          <Link to="/" className="text-3xl font-bold text-white hover:scale-105 transition-transform">
+            Risada<span className="text-pink-300">Fun</span>
+          </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-8">
             {categories.map((category) => (
               <Link
                 key={category.name}
                 to={category.path}
-                className="text-gray-200 hover:text-risada-accent transition-colors"
+                className="text-white hover:text-pink-200 transition-colors font-medium"
               >
                 {category.name}
               </Link>
             ))}
           </nav>
 
-          {/* Search Form */}
-          <div className="hidden md:block">
-            <form onSubmit={handleSearch} className="flex">
+          <div className="hidden md:flex items-center space-x-4">
+            <form onSubmit={handleSearch} className="relative">
               <Input
                 type="search"
-                placeholder="Search news..."
+                placeholder="Search fun..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 bg-white/10 text-white placeholder:text-gray-300 border-none"
+                className="w-64 bg-white/10 text-white placeholder:text-pink-100 border-none focus:ring-pink-400"
               />
-              <Button type="submit" variant="ghost" size="icon" className="ml-1 text-white">
+              <Button type="submit" variant="ghost" size="icon" className="absolute right-0 top-0 text-white">
                 <Search className="h-5 w-5" />
               </Button>
             </form>
           </div>
 
-          {/* Mobile Menu Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -78,17 +70,16 @@ const Header = () => {
           </Button>
         </div>
 
-        {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden mt-4 py-3 border-t border-gray-700 animate-fade-in">
+          <div className="md:hidden mt-4 py-3 border-t border-pink-400/30 animate-fade-in">
             <form onSubmit={handleSearch} className="mb-4">
               <div className="flex">
                 <Input
                   type="search"
-                  placeholder="Search news..."
+                  placeholder="Search fun..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-white/10 text-white placeholder:text-gray-300 border-none"
+                  className="bg-white/10 text-white placeholder:text-pink-100 border-none"
                 />
                 <Button type="submit" variant="ghost" size="icon" className="ml-1 text-white">
                   <Search className="h-5 w-5" />
@@ -100,7 +91,7 @@ const Header = () => {
                 <Link
                   key={category.name}
                   to={category.path}
-                  className="text-gray-200 hover:text-risada-accent transition-colors py-1"
+                  className="text-white hover:text-pink-200 transition-colors py-1"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {category.name}
