@@ -11,13 +11,13 @@ const CategoryPage = () => {
   const getCategoryNews = () => {
     switch (category) {
       case 'technology':
-        return { title: 'Technology News', news: mockTechnologyNews };
+        return { title: 'Notícias de Tecnologia', news: mockTechnologyNews };
       case 'business':
-        return { title: 'Business News', news: mockBusinessNews };
+        return { title: 'Notícias de Negócios', news: mockBusinessNews };
       case 'politics':
-        return { title: 'Politics News', news: mockPoliticsNews };
+        return { title: 'Notícias de Política', news: mockPoliticsNews };
       default:
-        return { title: 'Category News', news: [] };
+        return { title: 'Notícias da Categoria', news: [] };
     }
   };
 
@@ -29,7 +29,7 @@ const CategoryPage = () => {
         <h1 className="text-5xl font-bold mb-8 text-center bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
           {title}
         </h1>
-        <NewsGrid title="Latest Stories" news={news} />
+        <NewsGrid title="Últimas Histórias" news={news} />
       </div>
     </Layout>
   );

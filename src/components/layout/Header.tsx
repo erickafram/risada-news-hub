@@ -20,12 +20,12 @@ const Header = () => {
   };
 
   const categories = [
-    { name: 'Entertainment', path: '/category/entertainment' },
-    { name: 'Gaming', path: '/category/gaming' },
-    { name: 'Movies', path: '/category/movies' },
-    { name: 'Music', path: '/category/music' },
-    { name: 'Celebrity', path: '/category/celebrity' },
-    { name: 'Lifestyle', path: '/category/lifestyle' },
+    { name: 'Entretenimento', path: '/category/entertainment' },
+    { name: 'Jogos', path: '/category/gaming' },
+    { name: 'Filmes', path: '/category/movies' },
+    { name: 'Música', path: '/category/music' },
+    { name: 'Celebridades', path: '/category/celebrity' },
+    { name: 'Estilo de Vida', path: '/category/lifestyle' },
   ];
 
   return (
@@ -52,7 +52,7 @@ const Header = () => {
             <form onSubmit={handleSearch} className="relative">
               <Input
                 type="search"
-                placeholder="Search fun..."
+                placeholder="Pesquisar diversão..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-64 bg-white/10 text-white placeholder:text-pink-100 border-none focus:ring-pink-400"
@@ -87,7 +87,7 @@ const Header = () => {
               <div className="flex">
                 <Input
                   type="search"
-                  placeholder="Search fun..."
+                  placeholder="Pesquisar diversão..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="bg-white/10 text-white placeholder:text-pink-100 border-none"
@@ -114,7 +114,7 @@ const Header = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 <LogIn className="h-5 w-5" />
-                Login
+                Entrar
               </Link>
             </nav>
           </div>
