@@ -31,11 +31,11 @@ const NewsCard: React.FC<NewsCardProps> = ({ news, featured, compact, list }) =>
     year: 'numeric',
   });
 
-  const imageHeight = featured ? 'h-[400px]' : compact ? 'h-[195px]' : list ? 'h-48' : 'h-48';
+  const imageHeight = featured ? 'h-[500px]' : compact ? 'h-[180px]' : 'h-[220px]';
 
   return (
-    <Card className={`overflow-hidden border-0 shadow-none ${list ? 'flex' : ''}`}>
-      <div className={`relative ${imageHeight} ${list ? 'w-1/3' : 'w-full'}`}>
+    <Card className="overflow-hidden border-0 shadow-none">
+      <div className={`relative ${imageHeight}`}>
         <img
           src={news.imageUrl}
           alt={news.title}
@@ -54,20 +54,24 @@ const NewsCard: React.FC<NewsCardProps> = ({ news, featured, compact, list }) =>
           </div>
         </div>
       </div>
-      <CardContent className={`p-4 ${list ? 'w-2/3' : 'w-full'}`}>
+      <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
           <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
             {news.category}
           </Badge>
-          <span className="text-sm text-gray-600">{formattedDate}</span>
+          <span className="text-sm text-gray-500">{formattedDate}</span>
         </div>
         <Link to={`/article/${news.id}`}>
-          <h3 className={`${featured ? 'text-xl' : 'text-lg'} font-bold mb-2 text-gray-800`}>
+          <h3 
+            className={`font-bold mb-2 text-gray-800 line-clamp-2 ${
+              featured ? 'text-2xl' : compact ? 'text-lg' : 'text-xl'
+            }`}
+          >
             {news.title}
           </h3>
         </Link>
         {!compact && (
-          <p className="text-gray-600 text-sm line-clamp-2 mb-3">{news.excerpt}</p>
+          <p className="text-gray-600 text-sm line-clamp-2 mb-2">{news.excerpt}</p>
         )}
         <span className="text-sm text-gray-500">{news.source}</span>
       </CardContent>
