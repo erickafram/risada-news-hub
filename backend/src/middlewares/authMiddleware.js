@@ -4,47 +4,53 @@ const { User } = require('../models');
 // Middleware para verificar se o usuário está autenticado
 exports.authenticate = async (req, res, next) => {
   try {
-    // Verificar se o token está presente no cabeçalho
+    // Verificar se o token está presente no cabeçalho Authorization
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('[AUTH] Cabeçalho de autorização:', authHeader ? 'Presente' : 'Ausente');
+    
+    if (!authHeader) {
       return res.status(401).json({ message: 'Token não fornecido' });
     }
 
-    // Extrair o token do cabeçalho
+    // Extrair o token do cabeçalho (formato: Bearer <token>)
     const token = authHeader.split(' ')[1];
+    console.log('[AUTH] Token extraído:', token ? 'Presente' : 'Ausente');
+    
+    if (!token) {
+      return res.status(401).json({ message: 'Token não fornecido' });
+    }
 
     // Verificar e decodificar o token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const jwtSecret = process.env.JWT_SECRET || 'sua_chave_secreta';
+    console.log('[AUTH] Tentando verificar token');
+    
+    const decoded = jwt.verify(token, jwtSecret);
+    console.log('[AUTH] Token decodificado:', decoded ? `UserId: ${decoded.id}` : 'Falha');
 
-    // Buscar o usuário pelo ID decodificado do token
+    // Buscar o usuário pelo ID
     const user = await User.findByPk(decoded.id);
+    console.log('[AUTH] Usuário encontrado:', user ? `ID: ${user.id}, Role: ${user.role}` : 'Não encontrado');
+    
     if (!user) {
       return res.status(401).json({ message: 'Usuário não encontrado' });
     }
 
-    // Verificar se o usuário está ativo
-    if (!user.active) {
-      return res.status(401).json({ message: 'Usuário desativado' });
-    }
-
     // Adicionar o usuário ao objeto de requisição
-    req.user = {
-      id: user.id,
-      email: user.email,
-      role: user.role
-    };
+    req.user = user;
+    console.log('[AUTH] Autenticação bem-sucedida para usuário:', user.id);
 
-    // Passar para o próximo middleware
+    // Prosseguir para a próxima middleware ou rota
     next();
   } catch (error) {
+    console.error('[AUTH] Erro de autenticação:', error.name, error.message);
+    
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ message: 'Token inválido' });
+      return res.status(401).json({ message: 'Token inválido', error: error.message });
     }
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Token expirado' });
+      return res.status(401).json({ message: 'Token expirado', error: error.message });
     }
-    console.error('Erro de autenticação:', error);
-    return res.status(500).json({ message: 'Erro de autenticação' });
+    return res.status(500).json({ message: 'Erro interno do servidor', error: error.message });
   }
 };
 

@@ -21,12 +21,12 @@ const Header = () => {
   };
 
   const categories = [
-    { name: 'Entretenimento', path: '/category/entertainment' },
-    { name: 'Jogos', path: '/category/gaming' },
-    { name: 'Filmes', path: '/category/movies' },
-    { name: 'Música', path: '/category/music' },
-    { name: 'Celebridades', path: '/category/celebrity' },
-    { name: 'Estilo de Vida', path: '/category/lifestyle' },
+    { name: 'Entretenimento', path: '/category/entretenimento' },
+    { name: 'Jogos', path: '/category/jogos' },
+    { name: 'Filmes', path: '/category/filmes' },
+    { name: 'Música', path: '/category/musica' },
+    { name: 'Celebridades', path: '/category/celebridades' },
+    { name: 'Estilo de Vida', path: '/category/estilo-de-vida' },
   ];
 
   return (

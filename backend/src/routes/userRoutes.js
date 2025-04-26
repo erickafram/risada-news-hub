@@ -6,6 +6,9 @@ const { authenticate, isAdmin, isOwnerOrAdmin } = require('../middlewares/authMi
 // Todas as rotas de usuário requerem autenticação
 router.use(authenticate);
 
+// Rota para obter o perfil do usuário logado
+router.get('/profile', userController.getUserProfile);
+
 // Rotas para administradores
 router.get('/', isAdmin, userController.getAllUsers);
 router.patch('/:id/toggle-status', isAdmin, userController.toggleUserStatus);

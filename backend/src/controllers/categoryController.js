@@ -44,21 +44,33 @@ exports.getCategoryByIdOrSlug = async (req, res) => {
   try {
     const { identifier } = req.params;
     
+    console.log(`Buscando categoria com identificador: ${identifier}`);
+    
     let category;
     
     // Verificar se o identificador é um número (ID) ou string (slug)
     if (!isNaN(identifier)) {
+      console.log(`Identificador parece ser um ID: ${identifier}`);
       category = await Category.findByPk(identifier);
     } else {
+      console.log(`Identificador parece ser um slug: ${identifier}`);
+      // Lista todas as categorias para debug
+      const allCategories = await Category.findAll();
+      console.log('Categorias disponíveis:', allCategories.map(c => ({ id: c.id, name: c.name, slug: c.slug })));
+      
       category = await Category.findOne({ where: { slug: identifier } });
     }
     
     if (!category) {
+      console.log(`Categoria não encontrada para: ${identifier}`);
       return res.status(404).json({ message: 'Categoria não encontrada' });
     }
     
+    console.log(`Categoria encontrada:`, { id: category.id, name: category.name, slug: category.slug });
+    
     // Se o usuário não for admin e a categoria estiver inativa, retornar erro
     if (!category.active && (!req.user || req.user.role !== 'admin')) {
+      console.log(`Categoria inativa: ${category.name}`);
       return res.status(404).json({ message: 'Categoria não encontrada' });
     }
     

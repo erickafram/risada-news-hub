@@ -9,7 +9,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <Link to="/" className="text-2xl font-bold">
-              Risada<span className="text-pink-300">Fun</span>
+              <span className="text-white">memp</span><span className="text-pink-300">mw</span>
             </Link>
             <p className="mt-3 text-pink-100">
               Sua dose diária de entretenimento e diversão!
@@ -39,7 +39,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-pink-400/30 mt-8 pt-6 text-center text-pink-100">
-          <p>© {new Date().getFullYear()} RisadaFun. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} memepmw. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

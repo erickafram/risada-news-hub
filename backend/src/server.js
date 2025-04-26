@@ -10,6 +10,10 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const articleRoutes = require('./routes/articleRoutes');
 const authRoutes = require('./routes/authRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const reactionRoutes = require('./routes/reactionRoutes');
+const commentRoutes = require('./routes/commentRoutes');
+const seedRoutes = require('./routes/seedRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,10 +32,14 @@ app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/reactions', reactionRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/seed', seedRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Rota de teste
 app.get('/', (req, res) => {
-  res.json({ message: 'Bem-vindo à API do Risada News Hub!' });
+  res.json({ message: 'Bem-vindo à API do memepmw!' });
 });
 
 // Sincronização com o banco de dados e inicialização do servidor

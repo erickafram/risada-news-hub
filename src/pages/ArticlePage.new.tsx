@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Card } from '@/components/ui/card';
@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Heart, MessageCircle, Loader2, ArrowLeft, ThumbsUp, Angry, Laugh, Frown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import ReCAPTCHA from 'react-google-recaptcha';
 
 interface Article {
   id: number;
@@ -60,10 +59,7 @@ const ArticlePage = () => {
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState<CommentType[]>([]);
-  const [captchaValue, setCaptchaValue] = useState<string | null>(null);
-  const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
-
+  
   // Verificar se o usuário está autenticado
   useEffect(() => {
     const checkAuth = () => {
@@ -320,13 +316,6 @@ const ArticlePage = () => {
   };
 
   // Função para enviar comentários para o backend
-  // Função para lidar com a verificação do CAPTCHA
-  const handleCaptchaChange = (value: string | null) => {
-    console.log('[FRONTEND] CAPTCHA verificado:', value);
-    setCaptchaValue(value);
-    setIsCaptchaVerified(!!value);
-  };
-
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -337,12 +326,6 @@ const ArticlePage = () => {
     }
     
     if (!comment.trim()) {
-      alert('Por favor, digite um comentário.');
-      return;
-    }
-    
-    if (!isCaptchaVerified) {
-      alert('Por favor, verifique o CAPTCHA antes de enviar seu comentário.');
       return;
     }
     
@@ -356,8 +339,7 @@ const ArticlePage = () => {
         },
         body: JSON.stringify({
           content: comment,
-          parentId: null,
-          captchaToken: captchaValue
+          parentId: null
         })
       });
       
@@ -368,13 +350,8 @@ const ArticlePage = () => {
         // Atualizar a lista de comentários
         await fetchComments();
         
-        // Limpar o campo de comentário e resetar o CAPTCHA
+        // Limpar o campo de comentário
         setComment('');
-        setCaptchaValue(null);
-        setIsCaptchaVerified(false);
-        if (recaptchaRef.current) {
-          recaptchaRef.current.reset();
-        }
       } else {
         console.error('[FRONTEND] Erro ao enviar comentário. Status:', response.status);
         alert('Erro ao enviar comentário. Por favor, tente novamente.');
@@ -542,19 +519,7 @@ const ArticlePage = () => {
                   onChange={(e) => setComment(e.target.value)}
                   className="mb-2"
                 />
-                <div className="mb-4 mt-2">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" // Chave de teste do reCAPTCHA
-                    onChange={handleCaptchaChange}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Este site é protegido por reCAPTCHA para evitar spam.</p>
-                </div>
-                <Button 
-                  type="submit" 
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                  disabled={!isCaptchaVerified}
-                >
+                <Button type="submit" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
                   Enviar Comentário
                 </Button>
               </form>
@@ -565,13 +530,13 @@ const ArticlePage = () => {
                     <div key={comment.id} className="bg-gray-50 p-4 rounded-lg">
                       <div className="flex items-center mb-2">
                         <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold mr-2">
-                          {comment.user && comment.user.fullName ? comment.user.fullName.charAt(0) : '?'}
+                          {comment.user.fullName.charAt(0)}
                         </div>
-                        <span className="font-medium">{comment.user && comment.user.fullName ? comment.user.fullName : 'Usuário'}</span>
+                        <span className="font-medium">{comment.user.fullName}</span>
                       </div>
                       <p className="text-gray-700">{comment.content}</p>
                       <span className="text-sm text-gray-500 mt-2 block">
-                        {new Date(comment.created_at || new Date()).toLocaleDateString('pt-BR', {
+                        {new Date(comment.created_at).toLocaleDateString('pt-BR', {
                           day: '2-digit',
                           month: 'long',
                           year: 'numeric',

@@ -1,4 +1,5 @@
 const { User } = require('../models');
+const { UserReaction } = require('./reactionController');
 
 // Listar todos os usuários (apenas para administradores)
 exports.getAllUsers = async (req, res) => {
@@ -153,10 +154,45 @@ exports.promoteToAdmin = async (req, res) => {
     
     return res.status(200).json({
       message: 'Usuário promovido a administrador com sucesso',
-      role: user.role
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role
+      }
     });
   } catch (error) {
     console.error('Erro ao promover usuário:', error);
     return res.status(500).json({ message: 'Erro ao promover usuário' });
+  }
+};
+
+// Obter o perfil do usuário logado
+exports.getUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const user = await User.findByPk(userId, {
+      attributes: { exclude: ['password'] }
+    });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Usuário não encontrado' });
+    }
+    
+    // Formatar a resposta
+    const userProfile = {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      active: user.active,
+      createdAt: user.createdAt
+    };
+    
+    return res.status(200).json(userProfile);
+  } catch (error) {
+    console.error('Erro ao buscar perfil do usuário:', error);
+    return res.status(500).json({ message: 'Erro ao buscar perfil do usuário' });
   }
 };

@@ -35,25 +35,27 @@ const NewsCard: React.FC<NewsCardProps> = ({ news, featured, compact, list }) =>
 
   return (
     <Card className="overflow-hidden border-0 shadow-none">
-      <div className={`relative ${imageHeight}`}>
-        <img
-          src={news.imageUrl}
-          alt={news.title}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
-          <div className="flex gap-4 text-white">
-            <span className="flex items-center gap-1">
-              <Heart className="w-4 h-4" />
-              {news.likes || 0}
-            </span>
-            <span className="flex items-center gap-1">
-              <MessageCircle className="w-4 h-4" />
-              {news.comments || 0}
-            </span>
+      <Link to={`/article/${news.id}`} className="block">
+        <div className={`relative ${imageHeight} cursor-pointer transition-transform hover:scale-[1.02] duration-300`}>
+          <img
+            src={news.imageUrl}
+            alt={news.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+            <div className="flex gap-4 text-white">
+              <span className="flex items-center gap-1">
+                <Heart className="w-4 h-4" />
+                {news.likes || 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <MessageCircle className="w-4 h-4" />
+                {news.comments || 0}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      </Link>
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
           <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">

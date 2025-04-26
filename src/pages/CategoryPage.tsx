@@ -27,37 +27,68 @@ const CategoryPage = () => {
   });
   
   useEffect(() => {
-    const fetchCategoryAndNews = async () => {
+    const fetchCategory = async () => {
       setLoading(true);
       try {
         // Buscar informações da categoria
-        const categoryResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/${category}`);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        console.log(`Buscando categoria com slug: ${category}`);
+        console.log(`URL completa: ${apiUrl}/api/categories/${category}`);
+        
+        const categoryResponse = await fetch(`${apiUrl}/api/categories/${category}`);
         
         if (!categoryResponse.ok) {
+          console.error(`Erro na resposta: ${categoryResponse.status}`);
           throw new Error('Categoria não encontrada');
         }
         
         const categoryData = await categoryResponse.json();
+        console.log('Dados da categoria recebidos:', categoryData);
         setCategoryData(categoryData);
         
-        // Buscar artigos da categoria
-        const articlesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/articles?category=${categoryData.id}&limit=12`);
-        
-        if (articlesResponse.ok) {
-          const data = await articlesResponse.json();
-          setNews(data.articles.map(mapArticleToNewsItem));
-        }
-        
-        setLoading(false);
+        // Uma vez que temos os dados da categoria, buscamos os artigos
+        await fetchArticlesByCategory(categoryData.id);
       } catch (error) {
-        console.error('Erro ao buscar categoria ou artigos:', error);
+        console.error('Erro ao buscar categoria:', error);
         setError(error instanceof Error ? error.message : 'Erro ao buscar categoria');
         setLoading(false);
       }
     };
     
+    const fetchArticlesByCategory = async (categoryId: number) => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        console.log(`Buscando artigos para categoria ID: ${categoryId}`);
+        
+        // URL correta para buscar artigos de uma categoria
+        const articlesUrl = `${apiUrl}/api/articles?category=${categoryId}&limit=12`;
+        console.log(`URL de artigos: ${articlesUrl}`);
+        
+        const articlesResponse = await fetch(articlesUrl);
+        
+        if (!articlesResponse.ok) {
+          console.error(`Erro ao buscar artigos: ${articlesResponse.status}`);
+          throw new Error(`Erro ao buscar artigos: ${articlesResponse.status}`);
+        }
+        
+        const data = await articlesResponse.json();
+        console.log('Artigos recebidos:', data);
+        
+        if (data.articles && Array.isArray(data.articles)) {
+          setNews(data.articles.map(mapArticleToNewsItem));
+        } else {
+          console.warn('Nenhum artigo encontrado ou formato inesperado de resposta');
+          setNews([]);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar artigos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
     if (category) {
-      fetchCategoryAndNews();
+      fetchCategory();
     }
   }, [category]);
 

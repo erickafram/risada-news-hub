@@ -97,30 +97,66 @@ const ArticleForm = () => {
     setIsFetching(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      console.log(`Buscando artigo com ID: ${id}`);
+      
+      if (!token) {
+        console.error('Token não encontrado');
+        throw new Error('Você precisa estar autenticado para editar artigos');
+      }
+      
       const response = await fetch(`${apiUrl}/api/articles/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
-      if (!response.ok) {
-        throw new Error('Falha ao buscar artigo');
+      const responseText = await response.text();
+      console.log(`Resposta do servidor:`, responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Erro ao fazer parse da resposta JSON:', e);
+        throw new Error(`Resposta inválida do servidor: ${responseText.substring(0, 100)}...`);
       }
       
-      const data = await response.json();
+      if (!response.ok) {
+        console.error('Resposta não-OK:', response.status, response.statusText, data);
+        throw new Error(data.message || `Erro ${response.status}: ${response.statusText}`);
+      }
+      
+      console.log('Dados do artigo recebidos:', data);
+      
+      if (!data || !data.id) {
+        throw new Error('Dados do artigo incompletos ou inválidos');
+      }
+      
+      // Extrair o ID da categoria de forma segura
+      let categoryId = '';
+      if (data.categoryId) {
+        categoryId = data.categoryId.toString();
+      } else if (data.category_id) {
+        categoryId = data.category_id.toString();
+      } else if (data.category && data.category.id) {
+        categoryId = data.category.id.toString();
+      }
+      
+      console.log('ID da categoria extraído:', categoryId);
+      
       setFormData({
-        title: data.title,
-        content: data.content,
+        title: data.title || '',
+        content: data.content || '',
         summary: data.summary || '',
-        categoryId: data.category_id.toString(),
+        categoryId,
         featuredImage: data.featuredImage || '',
-        published: data.published
+        published: Boolean(data.published)
       });
     } catch (error) {
       console.error('Erro ao buscar artigo:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível carregar os dados do artigo',
+        description: error instanceof Error ? error.message : 'Não foi possível carregar os dados do artigo',
         variant: 'destructive'
       });
     } finally {

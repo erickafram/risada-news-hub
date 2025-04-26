@@ -57,10 +57,47 @@ CREATE TABLE IF NOT EXISTS user_favorites (
   FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Inserir um usuário administrador padrão (senha: admin123)
--- A senha está criptografada com bcrypt, você deve alterá-la após o primeiro login
+-- Tabela de reações dos usuários
+CREATE TABLE IF NOT EXISTS user_reactions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  article_id INT NOT NULL,
+  reaction_type ENUM('heart', 'thumbsUp', 'laugh', 'angry', 'sad') NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_user_article_reaction (user_id, article_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabela para contagem de reações por artigo (para performance)
+CREATE TABLE IF NOT EXISTS article_reaction_counts (
+  article_id INT NOT NULL,
+  reaction_type ENUM('heart', 'thumbsUp', 'laugh', 'angry', 'sad') NOT NULL,
+  count INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (article_id, reaction_type),
+  FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabela de comentários
+CREATE TABLE IF NOT EXISTS comments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  article_id INT NOT NULL,
+  user_id INT NOT NULL,
+  parent_id INT DEFAULT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Inserir usuários demo
 INSERT INTO users (full_name, email, phone, password, role)
-VALUES ('Administrador', 'admin@risadanews.com', '(00) 00000-0000', '$2a$10$ywfGH6ZvpnQEJ/gx9XCxYOAF.UH/9.HjV3Ip5o2H1LxJVyylAJwIq', 'admin');
+VALUES 
+('Administrador', 'admin@memepmw.com', '(00) 00000-0000', '$2a$10$ywfGH6ZvpnQEJ/gx9XCxYOAF.UH/9.HjV3Ip5o2H1LxJVyylAJwIq', 'admin'),
+('Leitor Demo', 'leitor@memepmw.com', '(00) 00000-0001', '$2a$10$ywfGH6ZvpnQEJ/gx9XCxYOAF.UH/9.HjV3Ip5o2H1LxJVyylAJwIq', 'reader');
 
 -- Inserir algumas categorias iniciais
 INSERT INTO categories (name, slug, description) VALUES

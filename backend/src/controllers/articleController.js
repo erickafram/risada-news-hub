@@ -1,5 +1,6 @@
 const { Article, Category, User } = require('../models');
 const { Op } = require('sequelize');
+const jwt = require('jsonwebtoken');
 
 // Função para criar slug a partir do título do artigo
 const createSlug = (title) => {
@@ -144,11 +145,14 @@ exports.getAllArticlesAdmin = async (req, res) => {
 exports.getArticleByIdOrSlug = async (req, res) => {
   try {
     const { identifier } = req.params;
+    console.log(`[BACKEND] Buscando artigo com identificador: ${identifier}`);
+    console.log(`[BACKEND] Usuário autenticado:`, req.user ? `ID: ${req.user.id}, Role: ${req.user.role}` : 'Nenhum');
     
     let article;
     
     // Verificar se o identificador é um número (ID) ou string (slug)
     if (!isNaN(identifier)) {
+      console.log(`[BACKEND] Buscando artigo por ID: ${identifier}`);
       article = await Article.findByPk(identifier, {
         include: [
           {
@@ -164,6 +168,7 @@ exports.getArticleByIdOrSlug = async (req, res) => {
         ]
       });
     } else {
+      console.log(`[BACKEND] Buscando artigo por slug: ${identifier}`);
       article = await Article.findOne({
         where: { slug: identifier },
         include: [
@@ -182,23 +187,59 @@ exports.getArticleByIdOrSlug = async (req, res) => {
     }
     
     if (!article) {
+      console.log(`[BACKEND] Artigo não encontrado para identificador: ${identifier}`);
       return res.status(404).json({ message: 'Artigo não encontrado' });
     }
     
-    // Se o usuário não for admin e o artigo não estiver publicado, retornar erro
-    if (!article.published && (!req.user || req.user.role !== 'admin')) {
-      return res.status(404).json({ message: 'Artigo não encontrado' });
+    console.log(`[BACKEND] Artigo encontrado:`, {
+      id: article.id,
+      title: article.title,
+      published: article.published,
+      categoryId: article.categoryId || article.category_id,
+      category: article.category ? { id: article.category.id, name: article.category.name } : null
+    });
+    
+    // Se o artigo não estiver publicado, verificar se é um administrador acessando
+    if (!article.published) {
+      // Verificar se há um token de autenticação
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        console.log(`[BACKEND] Acesso negado: artigo não publicado e sem token de autenticação`);
+        return res.status(404).json({ message: 'Artigo não encontrado' });
+      }
+      
+      try {
+        // Extrair e verificar o token
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'sua_chave_secreta');
+        
+        // Buscar o usuário
+        const user = await User.findByPk(decoded.id);
+        if (!user || user.role !== 'admin') {
+          console.log(`[BACKEND] Acesso negado: artigo não publicado e usuário não é admin`);
+          return res.status(404).json({ message: 'Artigo não encontrado' });
+        }
+        
+        // Adicionar o usuário ao objeto de requisição para uso posterior
+        req.user = user;
+        console.log(`[BACKEND] Acesso permitido: usuário admin ${user.id} acessando artigo não publicado`);
+      } catch (error) {
+        console.log(`[BACKEND] Acesso negado: erro ao verificar token`, error.message);
+        return res.status(404).json({ message: 'Artigo não encontrado' });
+      }
     }
     
-    // Incrementar contador de visualizações
-    if (article.published) {
+    // Incrementar contador de visualizações apenas para visualizações públicas (não admin)
+    if (article.published && (!req.user || req.user.role !== 'admin')) {
+      console.log(`[BACKEND] Incrementando contador de visualizações para o artigo ID: ${article.id}`);
       await article.update({ views: article.views + 1 });
     }
     
+    console.log(`[BACKEND] Enviando artigo para o cliente`);
     return res.status(200).json(article);
   } catch (error) {
-    console.error('Erro ao buscar artigo:', error);
-    return res.status(500).json({ message: 'Erro ao buscar artigo' });
+    console.error('[BACKEND] Erro ao buscar artigo:', error);
+    return res.status(500).json({ message: 'Erro ao buscar artigo', error: error.message });
   }
 };
 

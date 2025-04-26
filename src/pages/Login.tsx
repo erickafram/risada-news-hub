@@ -92,10 +92,6 @@ const Login = () => {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2 items-center">
-          <div className="flex items-center text-sm text-amber-600 bg-amber-50 p-2 rounded-md w-full">
-            <AlertCircle className="h-4 w-4 mr-2" />
-            <p>Usuário admin: admin@risadanews.com / admin123</p>
-          </div>
           <p className="text-sm text-gray-500 w-full text-center">
             Não tem uma conta? <Link to="/register" className="text-blue-600 hover:underline">Registre-se</Link>
           </p>
