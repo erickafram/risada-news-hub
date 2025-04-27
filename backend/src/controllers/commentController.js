@@ -1,8 +1,10 @@
 const { User, Article, sequelize } = require('../models');
+const { Op } = require('sequelize');
 
 // Definir modelo de comentários usando SQL direto para garantir que a tabela exista
 const createCommentsTable = async () => {
   try {
+    // Primeiro, criar a tabela se não existir
     await sequelize.query(`
       CREATE TABLE IF NOT EXISTS comments (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -10,6 +12,7 @@ const createCommentsTable = async () => {
         user_id INT NOT NULL,
         parent_id INT DEFAULT NULL,
         content TEXT NOT NULL,
+        status ENUM('approved', 'pending', 'spam') DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
@@ -48,6 +51,11 @@ const Comment = sequelize.define('comments', {
   content: {
     type: sequelize.Sequelize.TEXT,
     allowNull: false
+  },
+  status: {
+    type: sequelize.Sequelize.ENUM('approved', 'pending', 'spam'),
+    allowNull: false,
+    defaultValue: 'pending'
   }
 }, {
   tableName: 'comments',
@@ -260,9 +268,121 @@ exports.getCommentCount = async (req, res) => {
   }
 };
 
+// Método para listar todos os comentários (para administradores)
+exports.getAllComments = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status = 'all', search = '' } = req.query;
+    const offset = (page - 1) * limit;
+    
+    // Construir condições de busca
+    const whereConditions = {};
+    
+    // Filtrar por status se especificado
+    if (status && status !== 'all') {
+      whereConditions.status = status;
+    }
+    
+    // Buscar por conteúdo se houver termo de busca
+    if (search) {
+      whereConditions.content = {
+        [Op.like]: `%${search}%`
+      };
+    }
+    
+    // Buscar comentários com paginação e incluir informações de usuário e artigo
+    const { count, rows: comments } = await Comment.findAndCountAll({
+      where: whereConditions,
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'full_name', 'email']
+        },
+        {
+          model: Article,
+          as: 'article',
+          attributes: ['id', 'title', 'slug']
+        }
+      ],
+      limit: parseInt(limit),
+      offset: offset,
+      order: [['created_at', 'DESC']]
+    });
+    
+    // Formatar os comentários para o frontend
+    const formattedComments = comments.map(comment => ({
+      id: comment.id,
+      content: comment.content,
+      status: comment.status || 'pending',
+      createdAt: comment.created_at,
+      user: {
+        id: comment.user ? comment.user.id : null,
+        fullName: comment.user ? comment.user.full_name : 'Usuário Anônimo',
+        email: comment.user ? comment.user.email : 'anônimo@exemplo.com'
+      },
+      article: {
+        id: comment.article ? comment.article.id : null,
+        title: comment.article ? comment.article.title : 'Artigo não encontrado',
+        slug: comment.article ? comment.article.slug : ''
+      }
+    }));
+    
+    return res.status(200).json({
+      comments: formattedComments,
+      totalComments: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(page)
+    });
+    
+  } catch (error) {
+    console.error('Erro ao buscar comentários:', error);
+    return res.status(500).json({ message: 'Erro ao buscar comentários' });
+  }
+};
+
+// Método para atualizar o status de um comentário
+exports.updateCommentStatus = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { status } = req.body;
+    
+    // Verificar se o status é válido
+    if (!['approved', 'pending', 'spam'].includes(status)) {
+      return res.status(400).json({ message: 'Status inválido' });
+    }
+    
+    // Buscar o comentário
+    const comment = await Comment.findByPk(commentId);
+    
+    if (!comment) {
+      return res.status(404).json({ message: 'Comentário não encontrado' });
+    }
+    
+    // Atualizar o status do comentário
+    await comment.update({ status });
+    
+    return res.status(200).json({ 
+      message: `Comentário ${status === 'approved' ? 'aprovado' : status === 'spam' ? 'marcado como spam' : 'marcado como pendente'} com sucesso` 
+    });
+    
+  } catch (error) {
+    console.error('Erro ao atualizar status do comentário:', error);
+    return res.status(500).json({ message: 'Erro ao atualizar status do comentário' });
+  }
+};
+
 // Configurar associações
 Comment.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Comment.belongsTo(Article, { foreignKey: 'article_id', as: 'article' });
 Comment.belongsTo(Comment, { foreignKey: 'parent_id', as: 'parent' });
 Comment.hasMany(Comment, { foreignKey: 'parent_id', as: 'replies' });
 
-module.exports.Comment = Comment;
+module.exports = {
+  Comment,
+  addComment: exports.addComment,
+  getArticleComments: exports.getArticleComments,
+  deleteComment: exports.deleteComment,
+  getCommentCount: exports.getCommentCount,
+  getAllComments: exports.getAllComments,
+  updateCommentStatus: exports.updateCommentStatus
+};

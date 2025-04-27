@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -25,16 +26,22 @@ import AnalyticsPage from "./pages/admin/AnalyticsPage";
 import CommentsPage from "./pages/admin/CommentsPage";
 import SettingsPage from "./pages/admin/SettingsPage";
 import UsersPage from "./pages/admin/UsersPage";
+import PagesListPage from "./pages/admin/PagesListPage";
+import PageForm from "./pages/admin/PageForm";
+import PageView from "./pages/PageView";
+import { HelmetProvider } from "react-helmet-async";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+      <ThemeProvider>
+        <TooltipProvider>
+          <HelmetProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/category/:category" element={<CategoryPage />} />
@@ -109,10 +116,32 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            {/* Rotas para gerenciamento de páginas */}
+            <Route path="/admin/pages" element={
+              <ProtectedRoute requireAdmin={true}>
+                <PagesListPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/pages/new" element={
+              <ProtectedRoute requireAdmin={true}>
+                <PageForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/pages/edit/:id" element={
+              <ProtectedRoute requireAdmin={true}>
+                <PageForm />
+              </ProtectedRoute>
+            } />
+            
+            {/* Rota para visualização de páginas estáticas */}
+            <Route path="/:slug" element={<PageView />} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </TooltipProvider>
+          </HelmetProvider>
+        </TooltipProvider>
+      </ThemeProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

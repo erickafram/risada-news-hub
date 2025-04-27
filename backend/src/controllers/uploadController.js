@@ -53,6 +53,7 @@ exports.uploadImage = (req, res) => {
     }
     
     // Criar URL para a imagem
+    // Usando o caminho relativo para garantir que funcione em qualquer ambiente
     const imageUrl = `/uploads/images/${req.file.filename}`;
     
     return res.status(200).json({

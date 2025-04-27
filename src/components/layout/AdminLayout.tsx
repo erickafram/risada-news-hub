@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Home, Newspaper, FolderPlus, LogOut, Menu, X, Users, 
-  MessageSquare, Settings, BarChart3, ChevronDown, ChevronRight 
+  MessageSquare, Settings, BarChart3, ChevronDown, ChevronRight,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -52,7 +53,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const menuItems = [
     { path: '/admin', icon: <Home className="w-5 h-5" />, label: 'Dashboard' },
     { path: '/admin/categories', icon: <FolderPlus className="w-5 h-5" />, label: 'Categorias' },
-    { path: '/admin/news', icon: <Newspaper className="w-5 h-5" />, label: 'Notícias' },
+    { path: '/admin/news', icon: <Newspaper className="w-5 h-5" />, label: 'Artigos' },
+    { path: '/admin/pages', icon: <FileText className="w-5 h-5" />, label: 'Páginas' },
     { path: '/admin/users', icon: <Users className="w-5 h-5" />, label: 'Usuários' },
     { path: '/admin/comments', icon: <MessageSquare className="w-5 h-5" />, label: 'Comentários' },
     { path: '/admin/analytics', icon: <BarChart3 className="w-5 h-5" />, label: 'Estatísticas' },
@@ -75,7 +77,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           <Link to="/admin" className="flex items-center">
-            <span className="font-bold text-xl text-primary">Risada News</span>
+            <span className="font-bold text-xl text-primary">Painel Administrativo</span>
           </Link>
         </div>
         
@@ -107,7 +109,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             )}>
               {!isCollapsed && (
                 <Link to="/admin" className="flex items-center">
-                  <span className="font-bold text-xl text-primary">Risada News</span>
+                  <span className="font-bold text-xl text-primary">Painel</span>
                 </Link>
               )}
               <Button 

@@ -31,13 +31,18 @@ const User = sequelize.define('User', {
     allowNull: false
   },
   role: {
-    type: DataTypes.ENUM('reader', 'admin'),
-    defaultValue: 'reader',
+    type: DataTypes.ENUM('admin', 'editor', 'author', 'subscriber'),
+    defaultValue: 'subscriber',
     allowNull: false
   },
   active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  lastLogin: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'last_login'
   }
 }, {
   tableName: 'users',

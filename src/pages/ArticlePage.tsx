@@ -534,30 +534,42 @@ const ArticlePage = () => {
 
             <div className="pt-6">
               <h3 className="text-xl font-semibold mb-4">Comentários</h3>
-              <form onSubmit={handleComment} className="mb-6">
-                <Textarea
-                  id="comment-input"
-                  placeholder="Compartilhe sua opinião..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="mb-2"
-                />
-                <div className="mb-4 mt-2">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" // Chave de teste do reCAPTCHA
-                    onChange={handleCaptchaChange}
+              
+              {isAuthenticated ? (
+                <form onSubmit={handleComment} className="mb-6">
+                  <Textarea
+                    id="comment-input"
+                    placeholder="Compartilhe sua opinião..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    className="mb-2"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Este site é protegido por reCAPTCHA para evitar spam.</p>
+                  <div className="mb-4 mt-2">
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" // Chave de teste do reCAPTCHA
+                      onChange={handleCaptchaChange}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Este site é protegido por reCAPTCHA para evitar spam.</p>
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                    disabled={!isCaptchaVerified}
+                  >
+                    Enviar Comentário
+                  </Button>
+                </form>
+              ) : (
+                <div className="bg-gray-50 p-6 rounded-lg mb-6 text-center">
+                  <p className="text-gray-700 mb-4">Você precisa estar logado para comentar neste artigo.</p>
+                  <Link to="/login" className="inline-block">
+                    <Button className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                      Fazer Login
+                    </Button>
+                  </Link>
                 </div>
-                <Button 
-                  type="submit" 
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                  disabled={!isCaptchaVerified}
-                >
-                  Enviar Comentário
-                </Button>
-              </form>
+              )}
 
               <div className="space-y-4">
                 {comments.length > 0 ? (

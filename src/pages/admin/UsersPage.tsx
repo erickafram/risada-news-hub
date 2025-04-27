@@ -51,6 +51,7 @@ const UsersPage = () => {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [totalUsers, setTotalUsers] = useState(0);
   
   // Formulário para novo usuário
   const [newUser, setNewUser] = useState({
@@ -61,97 +62,138 @@ const UsersPage = () => {
     role: 'subscriber'
   });
   
-  // Dados de exemplo para usuários
-  const mockUsers: User[] = [
-    {
-      id: 1,
-      fullName: 'João Silva',
-      email: 'joao.silva@example.com',
-      role: 'admin',
-      status: 'active',
-      lastLogin: '2024-04-25T14:32:00',
-      createdAt: '2023-01-15T10:00:00',
-      articlesCount: 45
-    },
-    {
-      id: 2,
-      fullName: 'Maria Oliveira',
-      email: 'maria.oliveira@example.com',
-      role: 'editor',
-      status: 'active',
-      lastLogin: '2024-04-24T09:15:00',
-      createdAt: '2023-02-20T11:30:00',
-      articlesCount: 32
-    },
-    {
-      id: 3,
-      fullName: 'Carlos Mendes',
-      email: 'carlos.mendes@example.com',
-      role: 'author',
-      status: 'inactive',
-      lastLogin: '2024-03-15T16:45:00',
-      createdAt: '2023-03-10T09:45:00',
-      articlesCount: 18
-    },
-    {
-      id: 4,
-      fullName: 'Ana Souza',
-      email: 'ana.souza@example.com',
-      role: 'subscriber',
-      status: 'active',
-      lastLogin: '2024-04-26T08:20:00',
-      createdAt: '2023-04-05T14:20:00',
-      articlesCount: 0
-    },
-    {
-      id: 5,
-      fullName: 'Pedro Santos',
-      email: 'pedro.santos@example.com',
-      role: 'author',
-      status: 'banned',
-      lastLogin: '2024-02-10T11:30:00',
-      createdAt: '2023-05-12T16:10:00',
-      articlesCount: 7
+  // Função para buscar usuários do backend
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      let url = `${apiUrl}/api/users?page=${currentPage}`;
+      
+      // Adicionar filtros à URL
+      if (searchTerm) {
+        url += `&search=${encodeURIComponent(searchTerm)}`;
+      }
+      
+      if (activeTab !== 'all') {
+        // Mapear as abas para os parâmetros da API
+        if (activeTab === 'admin') {
+          url += '&role=admin';
+        } else if (activeTab === 'staff') {
+          // No backend não temos 'editor' ou 'author', apenas 'admin' e 'reader'
+          // Aqui estamos tratando 'staff' como 'admin' para simplificar
+          url += '&role=admin';
+        } else if (activeTab === 'subscribers') {
+          url += '&role=reader';
+        } else if (activeTab === 'inactive') {
+          url += '&status=inactive';
+        }
+      }
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erro ao buscar usuários');
+      }
+      
+      const data = await response.json();
+      console.log('Resposta da API:', data);
+      
+      // Verificar se a resposta contém a propriedade 'users'
+      if (data && Array.isArray(data)) {
+        // Se a resposta for um array, assumimos que são os usuários diretamente
+        const mappedUsers = data.map((user: any) => ({
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          // Agora o backend e o frontend usam os mesmos papéis
+          role: user.role as 'admin' | 'editor' | 'author' | 'subscriber',
+          status: user.active ? 'active' as const : 'inactive' as const,
+          lastLogin: user.lastLogin || '-',
+          createdAt: user.createdAt,
+          articlesCount: user.articlesCount || 0
+        }));
+        
+        setUsers(mappedUsers);
+        setTotalUsers(mappedUsers.length);
+        setTotalPages(Math.ceil(mappedUsers.length / 10));
+      } else if (data && data.users && Array.isArray(data.users)) {
+        // Se a resposta contiver a propriedade 'users' como um array
+        const mappedUsers = data.users.map((user: any) => ({
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role as 'admin' | 'editor' | 'author' | 'subscriber',
+          status: user.active ? 'active' as const : 'inactive' as const,
+          lastLogin: user.lastLogin || '-',
+          createdAt: user.createdAt,
+          articlesCount: user.articlesCount || 0
+        }));
+        
+        setUsers(mappedUsers);
+        setTotalUsers(data.totalUsers || mappedUsers.length);
+        setTotalPages(data.totalPages || Math.ceil(mappedUsers.length / 10));
+      } else {
+        // Se a resposta não contiver usuários, usar um array vazio
+        setUsers([]);
+        setTotalUsers(0);
+        setTotalPages(1);
+        console.error('Formato de resposta inesperado:', data);
+      }
+      
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os usuários.",
+        variant: "destructive",
+      });
+      
+      // Em caso de erro, usar dados de exemplo
+      const mockUsers: User[] = [
+        {
+          id: 1,
+          fullName: 'Administrador',
+          email: 'admin@memepmw.com',
+          role: 'admin',
+          status: 'active',
+          lastLogin: '2024-04-25T14:32:00',
+          createdAt: '2023-01-15T10:00:00',
+          articlesCount: 0
+        },
+        {
+          id: 2,
+          fullName: 'Leitor Demo',
+          email: 'leitor@memepmw.com',
+          role: 'subscriber',
+          status: 'active',
+          lastLogin: '2024-04-24T09:15:00',
+          createdAt: '2023-02-20T11:30:00',
+          articlesCount: 0
+        }
+      ];
+      
+      setUsers(mockUsers);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
   
   useEffect(() => {
-    // Em um cenário real, buscaríamos os usuários da API
-    // Aqui estamos usando dados de exemplo
-    setLoading(true);
-    
-    // Filtrar usuários com base na aba ativa
-    let filteredUsers = [...mockUsers];
-    
-    if (activeTab !== 'all') {
-      filteredUsers = mockUsers.filter(user => {
-        if (activeTab === 'admin') return user.role === 'admin';
-        if (activeTab === 'staff') return ['editor', 'author'].includes(user.role);
-        if (activeTab === 'subscribers') return user.role === 'subscriber';
-        if (activeTab === 'inactive') return user.status !== 'active';
-        return true;
-      });
-    }
-    
-    // Filtrar por termo de busca
-    if (searchTerm) {
-      filteredUsers = filteredUsers.filter(user => 
-        user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    setUsers(filteredUsers);
-    setTotalPages(Math.ceil(filteredUsers.length / 10));
-    setLoading(false);
-  }, [searchTerm, activeTab]);
+    fetchUsers();
+  }, [searchTerm, activeTab, currentPage, token]);
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // A busca já está sendo tratada no useEffect
   };
   
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validação básica
@@ -173,39 +215,61 @@ const UsersPage = () => {
       return;
     }
     
-    // Em um cenário real, enviaríamos uma requisição para a API
-    // Aqui estamos apenas atualizando o estado local
-    
-    const newUserId = Math.max(...users.map(user => user.id)) + 1;
-    
-    const createdUser: User = {
-      id: newUserId,
-      fullName: newUser.fullName,
-      email: newUser.email,
-      role: newUser.role as 'admin' | 'editor' | 'author' | 'subscriber',
-      status: 'active',
-      lastLogin: '-',
-      createdAt: new Date().toISOString(),
-      articlesCount: 0
-    };
-    
-    setUsers(prevUsers => [...prevUsers, createdUser]);
-    
-    toast({
-      title: "Usuário adicionado",
-      description: `${newUser.fullName} foi adicionado com sucesso.`,
-    });
-    
-    // Resetar formulário
-    setNewUser({
-      fullName: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      role: 'subscriber'
-    });
-    
-    setIsAddUserOpen(false);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      // Mapear o papel do frontend para o backend (subscriber -> reader)
+      const backendRole = newUser.role === 'subscriber' ? 'reader' : newUser.role;
+      
+      const response = await fetch(`${apiUrl}/api/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fullName: newUser.fullName,
+          email: newUser.email,
+          phone: '(00) 00000-0000', // Valor padrão
+          password: newUser.password,
+          role: backendRole
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao adicionar usuário');
+      }
+      
+      const createdUser = await response.json();
+      
+      toast({
+        title: "Usuário adicionado",
+        description: `${newUser.fullName} foi adicionado com sucesso.`,
+      });
+      
+      // Resetar formulário
+      setNewUser({
+        fullName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'subscriber'
+      });
+      
+      setIsAddUserOpen(false);
+      
+      // Recarregar a lista de usuários
+      fetchUsers();
+      
+    } catch (error: any) {
+      console.error('Erro ao adicionar usuário:', error);
+      toast({
+        title: "Erro ao adicionar usuário",
+        description: error.message || "Ocorreu um erro ao adicionar o usuário.",
+        variant: "destructive",
+      });
+    }
   };
   
   const handleEditUser = (user: User) => {
@@ -213,45 +277,94 @@ const UsersPage = () => {
     setIsEditUserOpen(true);
   };
   
-  const handleUpdateUser = (e: React.FormEvent) => {
+  const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedUser) return;
     
-    // Em um cenário real, enviaríamos uma requisição para a API
-    // Aqui estamos apenas atualizando o estado local
-    
-    setUsers(prevUsers => 
-      prevUsers.map(user => 
-        user.id === selectedUser.id ? selectedUser : user
-      )
-    );
-    
-    toast({
-      title: "Usuário atualizado",
-      description: `${selectedUser.fullName} foi atualizado com sucesso.`,
-    });
-    
-    setIsEditUserOpen(false);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      // Não é mais necessário mapear o papel, pois agora usamos os mesmos valores no frontend e backend
+      const backendRole = selectedUser.role;
+      
+      const response = await fetch(`${apiUrl}/api/users/${selectedUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fullName: selectedUser.fullName,
+          email: selectedUser.email,
+          role: backendRole
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao atualizar usuário');
+      }
+      
+      toast({
+        title: "Usuário atualizado",
+        description: `${selectedUser.fullName} foi atualizado com sucesso.`,
+      });
+      
+      setIsEditUserOpen(false);
+      
+      // Recarregar a lista de usuários
+      fetchUsers();
+      
+    } catch (error: any) {
+      console.error('Erro ao atualizar usuário:', error);
+      toast({
+        title: "Erro ao atualizar usuário",
+        description: error.message || "Ocorreu um erro ao atualizar o usuário.",
+        variant: "destructive",
+      });
+    }
   };
   
   const handleStatusChange = async (userId: number, newStatus: 'active' | 'inactive' | 'banned') => {
-    // Em um cenário real, enviaríamos uma requisição para a API
-    // Aqui estamos apenas atualizando o estado local
-    
-    setUsers(prevUsers => 
-      prevUsers.map(user => 
-        user.id === userId ? { ...user, status: newStatus } : user
-      )
-    );
-    
-    const statusText = newStatus === 'active' ? 'ativado' : newStatus === 'inactive' ? 'desativado' : 'banido';
-    
-    toast({
-      title: "Status atualizado",
-      description: `Usuário ${statusText} com sucesso.`,
-      variant: newStatus === 'banned' ? 'destructive' : 'default',
-    });
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      // No backend temos apenas active: true/false, não temos 'banned'
+      // Vamos tratar 'banned' como 'inactive' para simplificar
+      const isActive = newStatus === 'active';
+      
+      const response = await fetch(`${apiUrl}/api/users/${userId}/toggle-status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao atualizar status');
+      }
+      
+      const statusText = newStatus === 'active' ? 'ativado' : newStatus === 'inactive' ? 'desativado' : 'banido';
+      
+      toast({
+        title: "Status atualizado",
+        description: `Usuário ${statusText} com sucesso.`,
+        variant: newStatus === 'banned' ? 'destructive' : 'default',
+      });
+      
+      // Recarregar a lista de usuários
+      fetchUsers();
+      
+    } catch (error: any) {
+      console.error('Erro ao atualizar status:', error);
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message || "Ocorreu um erro ao atualizar o status do usuário.",
+        variant: "destructive",
+      });
+    }
   };
   
   const handleDelete = async (userId: number) => {
@@ -259,18 +372,38 @@ const UsersPage = () => {
       return;
     }
     
-    // Em um cenário real, enviaríamos uma requisição para a API
-    // Aqui estamos apenas atualizando o estado local
-    
-    setUsers(prevUsers => 
-      prevUsers.filter(user => user.id !== userId)
-    );
-    
-    toast({
-      title: "Usuário excluído",
-      description: "O usuário foi excluído permanentemente.",
-      variant: "destructive",
-    });
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      const response = await fetch(`${apiUrl}/api/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao excluir usuário');
+      }
+      
+      toast({
+        title: "Usuário excluído",
+        description: "O usuário foi excluído permanentemente.",
+        variant: "destructive",
+      });
+      
+      // Recarregar a lista de usuários
+      fetchUsers();
+      
+    } catch (error: any) {
+      console.error('Erro ao excluir usuário:', error);
+      toast({
+        title: "Erro ao excluir usuário",
+        description: error.message || "Ocorreu um erro ao excluir o usuário.",
+        variant: "destructive",
+      });
+    }
   };
   
   const formatDate = (dateString: string) => {

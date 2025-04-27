@@ -1,14 +1,66 @@
-const { User } = require('../models');
+const { User, Article } = require('../models');
 const { UserReaction } = require('./reactionController');
+const bcrypt = require('bcryptjs');
+const { Op } = require('sequelize');
 
 // Listar todos os usuários (apenas para administradores)
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.findAll({
-      attributes: { exclude: ['password'] }
+    const { search, role, status, page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    // Construir condições de busca
+    const whereConditions = {};
+    
+    if (search) {
+      whereConditions[Op.or] = [
+        { fullName: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } }
+      ];
+    }
+    
+    if (role && role !== 'all') {
+      whereConditions.role = role;
+    }
+    
+    if (status === 'active') {
+      whereConditions.active = true;
+    } else if (status === 'inactive') {
+      whereConditions.active = false;
+    }
+    
+    // Buscar usuários com paginação
+    const { count, rows: users } = await User.findAndCountAll({
+      where: whereConditions,
+      attributes: { exclude: ['password'] },
+      limit: parseInt(limit),
+      offset: offset,
+      order: [['createdAt', 'DESC']]
     });
     
-    return res.status(200).json(users);
+    // Para cada usuário, contar quantos artigos ele escreveu
+    const usersWithArticleCount = await Promise.all(users.map(async (user) => {
+      // Usando o nome correto do campo no banco de dados (author_id)
+      const articlesCount = await Article.count({
+        where: { author_id: user.id }
+      });
+      
+      // Formatar a data do último login (se existir)
+      let lastLogin = user.lastLogin || null;
+      
+      return {
+        ...user.toJSON(),
+        articlesCount,
+        lastLogin
+      };
+    }));
+    
+    return res.status(200).json({
+      users: usersWithArticleCount,
+      totalUsers: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(page)
+    });
   } catch (error) {
     console.error('Erro ao listar usuários:', error);
     return res.status(500).json({ message: 'Erro ao listar usuários' });
@@ -164,6 +216,109 @@ exports.promoteToAdmin = async (req, res) => {
   } catch (error) {
     console.error('Erro ao promover usuário:', error);
     return res.status(500).json({ message: 'Erro ao promover usuário' });
+  }
+};
+
+// Criar um novo usuário (apenas para administradores)
+exports.createUser = async (req, res) => {
+  try {
+    const { fullName, email, phone, password, role } = req.body;
+    
+    // Verificar se o email já está em uso
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Este email já está em uso' });
+    }
+    
+    // Criar o novo usuário
+    const newUser = await User.create({
+      fullName,
+      email,
+      phone: phone || '(00) 00000-0000', // Valor padrão se não for fornecido
+      password,
+      role: role || 'subscriber', // Valor padrão se não for fornecido
+      active: true
+    });
+    
+    // Retornar os dados do usuário criado (sem a senha)
+    return res.status(201).json({
+      id: newUser.id,
+      fullName: newUser.fullName,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: newUser.role,
+      active: newUser.active,
+      createdAt: newUser.createdAt,
+      updatedAt: newUser.updatedAt
+    });
+  } catch (error) {
+    console.error('Erro ao criar usuário:', error);
+    return res.status(500).json({ message: 'Erro ao criar usuário' });
+  }
+};
+
+// Excluir um usuário (apenas para administradores)
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const user = await User.findByPk(id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Usuário não encontrado' });
+    }
+    
+    // Não permitir excluir o próprio usuário
+    if (user.id === req.user.id) {
+      return res.status(403).json({ message: 'Você não pode excluir sua própria conta' });
+    }
+    
+    // Excluir o usuário
+    await user.destroy();
+    
+    return res.status(200).json({ message: 'Usuário excluído com sucesso' });
+  } catch (error) {
+    console.error('Erro ao excluir usuário:', error);
+    return res.status(500).json({ message: 'Erro ao excluir usuário' });
+  }
+};
+
+// Alterar o papel do usuário (admin ou reader)
+exports.changeUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    
+    if (!['admin', 'reader'].includes(role)) {
+      return res.status(400).json({ message: 'Papel inválido. Use "admin" ou "reader"' });
+    }
+    
+    const user = await User.findByPk(id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Usuário não encontrado' });
+    }
+    
+    // Não permitir alterar o próprio papel (para evitar que um admin remova seus próprios privilégios)
+    if (user.id === req.user.id) {
+      return res.status(403).json({ message: 'Você não pode alterar seu próprio papel' });
+    }
+    
+    // Alterar o papel do usuário
+    await user.update({ role });
+    
+    return res.status(200).json({
+      message: `Usuário alterado para ${role === 'admin' ? 'administrador' : 'leitor'} com sucesso`,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao alterar papel do usuário:', error);
+    return res.status(500).json({ message: 'Erro ao alterar papel do usuário' });
   }
 };
 

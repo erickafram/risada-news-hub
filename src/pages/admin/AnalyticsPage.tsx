@@ -2,39 +2,121 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, TrendingUp, Users, Clock, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Clock, Calendar, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
+import { getAuthToken } from '@/utils/auth';
 
 const AnalyticsPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [period, setPeriod] = useState('30d');
+  const [loading, setLoading] = useState({
+    overview: true,
+    content: true,
+    audience: true,
+    sources: true
+  });
   
-  // Dados de exemplo para os gráficos
-  const overviewData = {
-    totalVisits: 12458,
-    growth: 24.8,
-    uniqueVisitors: 8745,
-    visitorGrowth: 12.3,
-    avgTimeOnSite: '3m 45s',
-    timeGrowth: 8.7,
-    bounceRate: 42.5,
-    bounceRateChange: -3.2
+  // Estados para armazenar os dados reais
+  const [overviewData, setOverviewData] = useState({
+    totalVisits: 0,
+    growth: 0,
+    uniqueVisitors: 0,
+    visitorGrowth: 0,
+    avgTimeOnSite: '0m 0s',
+    timeGrowth: 0,
+    bounceRate: 0,
+    bounceRateChange: 0
+  });
+  
+  const [popularArticles, setPopularArticles] = useState<Array<{
+    id: number;
+    title: string;
+    views: number;
+    change: number;
+    slug?: string;
+  }>>([]);
+  
+  const [deviceData, setDeviceData] = useState<Array<{
+    device: string;
+    visits: number;
+    percentage: number;
+  }>>([]);
+  
+  const [trafficSources, setTrafficSources] = useState<Array<{
+    source: string;
+    percentage: number;
+    change: number;
+  }>>([]);
+  
+  // Função para buscar dados da API
+  const fetchData = async (endpoint: string) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const token = getAuthToken();
+      
+      const response = await fetch(`${apiUrl}/api/analytics/${endpoint}?period=${period}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar dados de ${endpoint}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`Erro ao buscar dados de ${endpoint}:`, error);
+      return null;
+    }
   };
   
-  const popularArticles = [
-    { id: 1, title: 'Como a inteligência artificial está transformando o jornalismo', views: 2345, change: 12.5 },
-    { id: 2, title: 'Os 10 melhores filmes de 2024 até agora', views: 1987, change: 8.3 },
-    { id: 3, title: 'Guia completo para investir em criptomoedas em 2024', views: 1654, change: -2.1 },
-    { id: 4, title: 'Receitas saudáveis para o dia a dia', views: 1432, change: 15.7 },
-    { id: 5, title: 'As tendências de moda para o verão', views: 1298, change: 5.2 }
-  ];
+  // Buscar dados de visão geral
+  const fetchOverviewData = async () => {
+    setLoading(prev => ({ ...prev, overview: true }));
+    const data = await fetchData('overview');
+    if (data) {
+      setOverviewData(data.overviewData);
+    }
+    setLoading(prev => ({ ...prev, overview: false }));
+  };
   
-  const trafficSources = [
-    { source: 'Pesquisa orgânica', percentage: 42, change: 3.5 },
-    { source: 'Redes sociais', percentage: 28, change: 7.2 },
-    { source: 'Tráfego direto', percentage: 15, change: -1.8 },
-    { source: 'Links externos', percentage: 10, change: 2.3 },
-    { source: 'Email', percentage: 5, change: 0.7 }
-  ];
+  // Buscar dados de conteúdo
+  const fetchContentData = async () => {
+    setLoading(prev => ({ ...prev, content: true }));
+    const data = await fetchData('content');
+    if (data) {
+      setPopularArticles(data.popularArticles);
+    }
+    setLoading(prev => ({ ...prev, content: false }));
+  };
+  
+  // Buscar dados de audiência
+  const fetchAudienceData = async () => {
+    setLoading(prev => ({ ...prev, audience: true }));
+    const data = await fetchData('audience');
+    if (data) {
+      setDeviceData(data.devices);
+    }
+    setLoading(prev => ({ ...prev, audience: false }));
+  };
+  
+  // Buscar dados de fontes de tráfego
+  const fetchTrafficSourceData = async () => {
+    setLoading(prev => ({ ...prev, sources: true }));
+    const data = await fetchData('traffic-sources');
+    if (data) {
+      setTrafficSources(data.trafficSources);
+    }
+    setLoading(prev => ({ ...prev, sources: false }));
+  };
+  
+  // Carregar dados quando o período mudar
+  useEffect(() => {
+    fetchOverviewData();
+    fetchContentData();
+    fetchAudienceData();
+    fetchTrafficSourceData();
+  }, [period]);
   
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('pt-BR').format(num);
@@ -85,6 +167,13 @@ const AnalyticsPage = () => {
           </TabsList>
           
           <TabsContent value="overview" className="space-y-6">
+            {loading.overview ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2 text-gray-500">Carregando dados...</span>
+              </div>
+            ) : (
+            <>
             {/* Cards de métricas principais */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="p-4 border border-gray-100">
@@ -166,9 +255,17 @@ const AnalyticsPage = () => {
                 </div>
               </div>
             </Card>
+            </>
+            )}
           </TabsContent>
           
           <TabsContent value="content" className="space-y-6">
+            {loading.content ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2 text-gray-500">Carregando dados...</span>
+              </div>
+            ) : (
             <Card className="p-6 border border-gray-100">
               <h3 className="text-lg font-semibold mb-4">Artigos Mais Populares</h3>
               <div className="overflow-x-auto">
@@ -181,36 +278,76 @@ const AnalyticsPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {popularArticles.map((article) => (
-                      <tr key={article.id} className="border-b last:border-0 hover:bg-gray-50">
-                        <td className="py-3 px-4">
-                          <div className="line-clamp-1">{article.title}</div>
-                        </td>
-                        <td className="py-3 px-4 text-right font-medium">{formatNumber(article.views)}</td>
-                        <td className="py-3 px-4">
-                          <div className={`flex items-center justify-end ${article.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {article.change > 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
-                            <span className="font-medium">{Math.abs(article.change)}%</span>
-                          </div>
+                    {popularArticles.length > 0 ? (
+                      popularArticles.map((article) => (
+                        <tr key={article.id} className="border-b last:border-0 hover:bg-gray-50">
+                          <td className="py-3 px-4">
+                            <div className="line-clamp-1">{article.title}</div>
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium">{formatNumber(article.views)}</td>
+                          <td className="py-3 px-4">
+                            <div className={`flex items-center justify-end ${article.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {article.change > 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
+                              <span className="font-medium">{Math.abs(article.change)}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="py-8 text-center text-gray-500">
+                          Nenhum artigo encontrado no período selecionado
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
             </Card>
+            )}
           </TabsContent>
           
           <TabsContent value="audience" className="space-y-6">
+            {loading.audience ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2 text-gray-500">Carregando dados...</span>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="p-6 border border-gray-100">
                 <h3 className="text-lg font-semibold mb-4">Dispositivos</h3>
-                <div className="h-64 flex items-center justify-center bg-gray-50 rounded-md">
-                  <div className="text-center text-gray-500">
-                    <BarChart3 className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                    <p>Gráfico de dispositivos será exibido aqui</p>
+                {deviceData.length > 0 ? (
+                  <div className="space-y-4">
+                    {deviceData.map((device, index) => (
+                      <div key={index}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-medium">
+                            {device.device === 'desktop' ? 'Desktop' : 
+                             device.device === 'mobile' ? 'Dispositivos Móveis' : 
+                             device.device === 'tablet' ? 'Tablets' : device.device}
+                          </span>
+                          <div className="flex items-center">
+                            <span className="text-sm font-bold mr-2">{device.percentage}%</span>
+                            <span className="text-xs">{formatNumber(device.visits)} visitas</span>
+                          </div>
+                        </div>
+                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full" 
+                            style={{ width: `${device.percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="h-64 flex items-center justify-center bg-gray-50 rounded-md">
+                    <div className="text-center text-gray-500">
+                      <p>Nenhum dado de dispositivo encontrado no período selecionado</p>
+                    </div>
+                  </div>
+                )}
               </Card>
               
               <Card className="p-6 border border-gray-100">
@@ -218,39 +355,55 @@ const AnalyticsPage = () => {
                 <div className="h-64 flex items-center justify-center bg-gray-50 rounded-md">
                   <div className="text-center text-gray-500">
                     <BarChart3 className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                    <p>Mapa de localização será exibido aqui</p>
+                    <p>Dados de localização não disponíveis no momento</p>
                   </div>
                 </div>
               </Card>
             </div>
+            )}
           </TabsContent>
           
           <TabsContent value="sources" className="space-y-6">
+            {loading.sources ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2 text-gray-500">Carregando dados...</span>
+              </div>
+            ) : (
             <Card className="p-6 border border-gray-100">
               <h3 className="text-lg font-semibold mb-4">Fontes de Tráfego</h3>
-              <div className="space-y-4">
-                {trafficSources.map((source, index) => (
-                  <div key={index}>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium">{source.source}</span>
-                      <div className="flex items-center">
-                        <span className="text-sm font-bold mr-2">{source.percentage}%</span>
-                        <span className={`text-xs flex items-center ${source.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {source.change > 0 ? <ArrowUpRight className="h-3 w-3 mr-0.5" /> : <ArrowDownRight className="h-3 w-3 mr-0.5" />}
-                          {Math.abs(source.change)}%
-                        </span>
+              {trafficSources.length > 0 ? (
+                <div className="space-y-4">
+                  {trafficSources.map((source, index) => (
+                    <div key={index}>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-medium">{source.source}</span>
+                        <div className="flex items-center">
+                          <span className="text-sm font-bold mr-2">{source.percentage}%</span>
+                          <span className={`text-xs flex items-center ${source.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {source.change > 0 ? <ArrowUpRight className="h-3 w-3 mr-0.5" /> : <ArrowDownRight className="h-3 w-3 mr-0.5" />}
+                            {Math.abs(source.change)}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary rounded-full" 
+                          style={{ width: `${source.percentage}%` }}
+                        />
                       </div>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 rounded-full" 
-                        style={{ width: `${source.percentage}%` }}
-                      />
-                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-64 flex items-center justify-center bg-gray-50 rounded-md">
+                  <div className="text-center text-gray-500">
+                    <p>Nenhum dado de fonte de tráfego encontrado no período selecionado</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>

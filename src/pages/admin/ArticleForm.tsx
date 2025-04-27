@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 interface Category {
   id: number;
@@ -388,15 +390,33 @@ const ArticleForm = () => {
             
             <div className="space-y-2">
               <Label htmlFor="content">Conteúdo</Label>
-              <Textarea
-                id="content"
-                name="content"
-                value={formData.content}
-                onChange={handleChange}
-                placeholder="Conteúdo do artigo"
-                rows={10}
-                required
-              />
+              <div className="min-h-[200px] border rounded-md">
+                <ReactQuill
+                  id="content"
+                  value={formData.content}
+                  onChange={(value) => setFormData(prev => ({ ...prev, content: value }))}
+                  placeholder="Conteúdo do artigo"
+                  theme="snow"
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'indent': '-1'}, { 'indent': '+1' }],
+                      [{ 'align': [] }],
+                      ['link', 'image'],
+                      ['clean']
+                    ]
+                  }}
+                  formats={[
+                    'header',
+                    'bold', 'italic', 'underline', 'strike',
+                    'list', 'bullet', 'indent',
+                    'link', 'image', 'align'
+                  ]}
+                  className="h-[300px] mb-12"
+                />
+              </div>
             </div>
             
             <div className="space-y-2">

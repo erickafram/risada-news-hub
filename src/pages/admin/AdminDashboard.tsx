@@ -25,6 +25,20 @@ interface DashboardStats {
     name: string;
     articleCount: number;
   }>;
+  categoriesThisMonth: number;
+  articlesThisWeek: number;
+  viewsGrowthPercent: number;
+  commentStats: {
+    total: number;
+    approved: number;
+    pending: number;
+    spam: number;
+  };
+  commentPercentages: {
+    approved: number;
+    pending: number;
+    spam: number;
+  };
 }
 
 const AdminDashboard = () => {
@@ -117,7 +131,9 @@ const AdminDashboard = () => {
                 <h3 className="text-sm font-medium text-gray-500 mb-1">Categorias</h3>
                 <div className="flex items-baseline">
                   <p className="text-2xl font-bold">{stats?.categoryCount || 0}</p>
-                  <span className="ml-2 text-xs text-green-500 font-medium">+2 este mês</span>
+                  {stats?.categoriesThisMonth > 0 && (
+                    <span className="ml-2 text-xs text-green-500 font-medium">+{stats.categoriesThisMonth} este mês</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -132,7 +148,9 @@ const AdminDashboard = () => {
                 <h3 className="text-sm font-medium text-gray-500 mb-1">Notícias</h3>
                 <div className="flex items-baseline">
                   <p className="text-2xl font-bold">{stats?.articleCount || 0}</p>
-                  <span className="ml-2 text-xs text-green-500 font-medium">+5 esta semana</span>
+                  {stats?.articlesThisWeek > 0 && (
+                    <span className="ml-2 text-xs text-green-500 font-medium">+{stats.articlesThisWeek} esta semana</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -147,7 +165,11 @@ const AdminDashboard = () => {
                 <h3 className="text-sm font-medium text-gray-500 mb-1">Visualizações</h3>
                 <div className="flex items-baseline">
                   <p className="text-2xl font-bold">{formatNumber(stats?.totalViews || 0)}</p>
-                  <span className="ml-2 text-xs text-green-500 font-medium">+24% este mês</span>
+                  {stats?.viewsGrowthPercent > 0 ? (
+                    <span className="ml-2 text-xs text-green-500 font-medium">+{stats.viewsGrowthPercent}% este mês</span>
+                  ) : stats?.viewsGrowthPercent < 0 ? (
+                    <span className="ml-2 text-xs text-red-500 font-medium">{stats.viewsGrowthPercent}% este mês</span>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -173,35 +195,36 @@ const AdminDashboard = () => {
           
           <div>
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5 h-full">
-              <h3 className="text-lg font-semibold mb-4">Resumo</h3>
+              <h3 className="text-lg font-semibold mb-4">Resumo de comentários</h3>
+              <p className="text-sm text-gray-500 mb-4">Total: <span className="font-medium">{stats?.commentStats.total || 0}</span></p>
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-500">Comentários</span>
-                    <span className="font-medium">45</span>
+                    <span className="text-gray-500">Comentários aprovados</span>
+                    <span className="font-medium">{stats?.commentStats.approved || 0}</span>
                   </div>
                   <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '45%' }} />
+                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${stats?.commentPercentages.approved || 0}%` }} />
                   </div>
                 </div>
                 
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-500">Novos usuários</span>
-                    <span className="font-medium">12</span>
+                    <span className="text-gray-500">Comentários pendentes</span>
+                    <span className="font-medium">{stats?.commentStats.pending || 0}</span>
                   </div>
                   <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-purple-500 rounded-full" style={{ width: '25%' }} />
+                    <div className="h-full bg-yellow-500 rounded-full" style={{ width: `${stats?.commentPercentages.pending || 0}%` }} />
                   </div>
                 </div>
                 
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-500">Taxa de engajamento</span>
-                    <span className="font-medium">68%</span>
+                    <span className="text-gray-500">Comentários spam</span>
+                    <span className="font-medium">{stats?.commentStats.spam || 0}</span>
                   </div>
                   <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 rounded-full" style={{ width: '68%' }} />
+                    <div className="h-full bg-red-500 rounded-full" style={{ width: `${stats?.commentPercentages.spam || 0}%` }} />
                   </div>
                 </div>
               </div>

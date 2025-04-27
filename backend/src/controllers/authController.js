@@ -32,7 +32,7 @@ exports.register = async (req, res) => {
       email,
       phone,
       password,
-      role: 'reader' // Por padrão, todos os novos usuários são leitores
+      role: 'subscriber' // Por padrão, todos os novos usuários são leitores
     });
 
     // Gerar token JWT
@@ -77,6 +77,9 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Sua conta está desativada' });
     }
 
+    // Atualizar a data do último login
+    await user.update({ lastLogin: new Date() });
+
     // Gerar token JWT
     const token = generateToken(user);
 
@@ -87,7 +90,8 @@ exports.login = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         phone: user.phone,
-        role: user.role
+        role: user.role,
+        lastLogin: user.lastLogin
       },
       token
     });

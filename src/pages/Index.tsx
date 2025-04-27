@@ -5,6 +5,7 @@ import NewsCard from '@/components/news/NewsCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { NewsItem } from '@/components/news/NewsCard';
 import { Loader2 } from 'lucide-react';
+import SiteTitle from '@/components/SiteTitle';
 
 const Index = () => {
   const [featuredNews, setFeaturedNews] = useState<NewsItem[]>([]);
@@ -146,6 +147,7 @@ const Index = () => {
 
   return (
     <Layout>
+      <SiteTitle />
       <div className="container mx-auto px-4 py-8">
         {loading ? (
           <div className="flex justify-center items-center h-64">

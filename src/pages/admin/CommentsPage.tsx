@@ -43,151 +43,237 @@ const CommentsPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [activeTab, setActiveTab] = useState('all');
   
-  // Dados de exemplo para comentários
-  const mockComments: Comment[] = [
-    {
-      id: 1,
-      content: "Excelente artigo! Muito informativo e bem escrito.",
-      status: 'approved',
-      createdAt: '2024-04-25T14:32:00',
-      user: {
-        id: 1,
-        fullName: 'João Silva',
-        email: 'joao.silva@example.com'
-      },
-      article: {
-        id: 1,
-        title: 'Como a inteligência artificial está transformando o jornalismo',
-        slug: 'como-a-inteligencia-artificial-esta-transformando-o-jornalismo'
-      }
-    },
-    {
-      id: 2,
-      content: "Discordo de alguns pontos, mas no geral é um bom conteúdo.",
-      status: 'approved',
-      createdAt: '2024-04-24T09:15:00',
-      user: {
-        id: 2,
-        fullName: 'Maria Oliveira',
-        email: 'maria.oliveira@example.com'
-      },
-      article: {
-        id: 2,
-        title: 'Os 10 melhores filmes de 2024 até agora',
-        slug: 'os-10-melhores-filmes-de-2024-ate-agora'
-      }
-    },
-    {
-      id: 3,
-      content: "Compre relógios de luxo com desconto! Acesse nosso site: www.relogiosfalsos.com",
-      status: 'spam',
-      createdAt: '2024-04-23T22:45:00',
-      user: {
-        id: 3,
-        fullName: 'Spam Bot',
-        email: 'spam@example.com'
-      },
-      article: {
-        id: 1,
-        title: 'Como a inteligência artificial está transformando o jornalismo',
-        slug: 'como-a-inteligencia-artificial-esta-transformando-o-jornalismo'
-      }
-    },
-    {
-      id: 4,
-      content: "Gostaria de saber mais sobre esse assunto. Vocês têm alguma referência adicional?",
-      status: 'pending',
-      createdAt: '2024-04-26T08:20:00',
-      user: {
-        id: 4,
-        fullName: 'Carlos Mendes',
-        email: 'carlos.mendes@example.com'
-      },
-      article: {
-        id: 3,
-        title: 'Guia completo para investir em criptomoedas em 2024',
-        slug: 'guia-completo-para-investir-em-criptomoedas-em-2024'
-      }
-    },
-    {
-      id: 5,
-      content: "Adorei as dicas! Já estou colocando em prática.",
-      status: 'approved',
-      createdAt: '2024-04-25T16:10:00',
-      user: {
-        id: 5,
-        fullName: 'Ana Souza',
-        email: 'ana.souza@example.com'
-      },
-      article: {
-        id: 4,
-        title: 'Receitas saudáveis para o dia a dia',
-        slug: 'receitas-saudaveis-para-o-dia-a-dia'
-      }
-    }
-  ];
-  
   useEffect(() => {
-    // Em um cenário real, buscaríamos os comentários da API
-    // Aqui estamos usando dados de exemplo
+    // Buscar comentários do backend
+    fetchComments();
+  }, [activeTab, searchTerm, currentPage, token]);
+  
+  // Função para buscar comentários do backend
+  const fetchComments = async () => {
+    if (!token) return;
+    
     setLoading(true);
     
-    // Filtrar comentários com base na aba ativa
-    let filteredComments = [...mockComments];
-    
-    if (activeTab !== 'all') {
-      filteredComments = mockComments.filter(comment => comment.status === activeTab);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      // Construir parâmetros de consulta
+      const queryParams = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '10',
+        status: activeTab,
+        search: searchTerm
+      });
+      
+      const response = await fetch(`${apiUrl}/api/comments/admin?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao buscar comentários');
+      }
+      
+      const data = await response.json();
+      console.log('Resposta da API:', data);
+      
+      setComments(data.comments || []);
+      setTotalPages(data.totalPages || 1);
+      
+    } catch (error: any) {
+      console.error('Erro ao buscar comentários:', error);
+      toast({
+        title: "Erro",
+        description: `Não foi possível carregar os comentários: ${error.message}`,
+        variant: "destructive"
+      });
+      
+      // Se houver erro, usar um array vazio
+      setComments([]);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
     }
-    
-    // Filtrar por termo de busca
-    if (searchTerm) {
-      filteredComments = filteredComments.filter(comment => 
-        comment.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        comment.user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        comment.article.title.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    setComments(filteredComments);
-    setTotalPages(Math.ceil(filteredComments.length / 10));
-    setLoading(false);
-  }, [searchTerm, activeTab]);
+  };
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // A busca já está sendo tratada no useEffect
   };
   
-  const handleStatusChange = async (commentId: number, newStatus: 'approved' | 'pending' | 'spam') => {
-    // Em um cenário real, enviaríamos uma requisição para a API
-    // Aqui estamos apenas atualizando o estado local
+  const handleApproveComment = async (commentId: number) => {
+    if (!token) return;
     
-    setComments(prevComments => 
-      prevComments.map(comment => 
-        comment.id === commentId ? { ...comment, status: newStatus } : comment
-      )
-    );
-    
-    toast({
-      title: "Status atualizado",
-      description: `Comentário ${newStatus === 'approved' ? 'aprovado' : newStatus === 'spam' ? 'marcado como spam' : 'marcado como pendente'} com sucesso.`,
-      variant: newStatus === 'approved' ? 'default' : newStatus === 'spam' ? 'destructive' : 'default',
-    });
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      const response = await fetch(`${apiUrl}/api/comments/${commentId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'approved' })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao aprovar comentário');
+      }
+      
+      // Atualizar o status do comentário na interface
+      const updatedComments = comments.map(comment => {
+        if (comment.id === commentId) {
+          return { ...comment, status: 'approved' as const };
+        }
+        return comment;
+      });
+      
+      setComments(updatedComments);
+      
+      toast({
+        title: "Comentário aprovado",
+        description: "O comentário foi aprovado com sucesso.",
+      });
+      
+    } catch (error: any) {
+      console.error('Erro ao aprovar comentário:', error);
+      toast({
+        title: "Erro",
+        description: `Não foi possível aprovar o comentário: ${error.message}`,
+        variant: "destructive"
+      });
+    }
   };
   
-  const handleDelete = async (commentId: number) => {
-    // Em um cenário real, enviaríamos uma requisição para a API
-    // Aqui estamos apenas atualizando o estado local
+  const handleMarkAsPending = async (commentId: number) => {
+    if (!token) return;
     
-    setComments(prevComments => 
-      prevComments.filter(comment => comment.id !== commentId)
-    );
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      const response = await fetch(`${apiUrl}/api/comments/${commentId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'pending' })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao marcar comentário como pendente');
+      }
+      
+      // Atualizar o status do comentário na interface
+      const updatedComments = comments.map(comment => {
+        if (comment.id === commentId) {
+          return { ...comment, status: 'pending' as const };
+        }
+        return comment;
+      });
+      
+      setComments(updatedComments);
+      
+      toast({
+        title: "Comentário marcado como pendente",
+        description: "O comentário foi marcado como pendente com sucesso.",
+      });
+      
+    } catch (error: any) {
+      console.error('Erro ao marcar comentário como pendente:', error);
+      toast({
+        title: "Erro",
+        description: `Não foi possível marcar o comentário como pendente: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleMarkAsSpam = async (commentId: number) => {
+    if (!token) return;
     
-    toast({
-      title: "Comentário excluído",
-      description: "O comentário foi excluído permanentemente.",
-      variant: "destructive",
-    });
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      const response = await fetch(`${apiUrl}/api/comments/${commentId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'spam' })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao marcar comentário como spam');
+      }
+      
+      // Atualizar o status do comentário na interface
+      const updatedComments = comments.map(comment => {
+        if (comment.id === commentId) {
+          return { ...comment, status: 'spam' as const };
+        }
+        return comment;
+      });
+      
+      setComments(updatedComments);
+      
+      toast({
+        title: "Comentário marcado como spam",
+        description: "O comentário foi marcado como spam com sucesso.",
+      });
+      
+    } catch (error: any) {
+      console.error('Erro ao marcar comentário como spam:', error);
+      toast({
+        title: "Erro",
+        description: `Não foi possível marcar o comentário como spam: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleDeleteComment = async (commentId: number) => {
+    if (!token) return;
+    
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      const response = await fetch(`${apiUrl}/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao excluir comentário');
+      }
+      
+      // Remover o comentário da lista
+      const updatedComments = comments.filter(comment => comment.id !== commentId);
+      setComments(updatedComments);
+      
+      toast({
+        title: "Comentário excluído",
+        description: "O comentário foi excluído com sucesso.",
+      });
+      
+    } catch (error: any) {
+      console.error('Erro ao excluir comentário:', error);
+      toast({
+        title: "Erro",
+        description: `Não foi possível excluir o comentário: ${error.message}`,
+        variant: "destructive"
+      });
+    }
   };
   
   const formatDate = (dateString: string) => {
@@ -315,21 +401,21 @@ const CommentsPage = () => {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   {comment.status !== 'approved' && (
-                                    <DropdownMenuItem onClick={() => handleStatusChange(comment.id, 'approved')}>
+                                    <DropdownMenuItem onClick={() => handleApproveComment(comment.id)}>
                                       <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
                                       <span>Aprovar</span>
                                     </DropdownMenuItem>
                                   )}
                                   
                                   {comment.status !== 'pending' && (
-                                    <DropdownMenuItem onClick={() => handleStatusChange(comment.id, 'pending')}>
+                                    <DropdownMenuItem onClick={() => handleMarkAsPending(comment.id)}>
                                       <AlertCircle className="h-4 w-4 mr-2 text-yellow-500" />
                                       <span>Marcar como pendente</span>
                                     </DropdownMenuItem>
                                   )}
                                   
                                   {comment.status !== 'spam' && (
-                                    <DropdownMenuItem onClick={() => handleStatusChange(comment.id, 'spam')}>
+                                    <DropdownMenuItem onClick={() => handleMarkAsSpam(comment.id)}>
                                       <XCircle className="h-4 w-4 mr-2 text-red-500" />
                                       <span>Marcar como spam</span>
                                     </DropdownMenuItem>
@@ -337,7 +423,7 @@ const CommentsPage = () => {
                                   
                                   <DropdownMenuItem 
                                     className="text-red-600"
-                                    onClick={() => handleDelete(comment.id)}
+                                    onClick={() => handleDeleteComment(comment.id)}
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     <span>Excluir</span>

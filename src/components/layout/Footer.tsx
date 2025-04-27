@@ -1,10 +1,48 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { getMenuPages, MenuPage } from '@/services/pageService';
+import { getPublicSettings } from '@/services/settingsService';
+import { cn } from '@/lib/utils';
 
 const Footer = () => {
+  const [menuPages, setMenuPages] = useState<MenuPage[]>([]);
+  const [footerStartColor, setFooterStartColor] = useState('#9333ea'); // purple-600 padrão
+  const [footerEndColor, setFooterEndColor] = useState('#db2777'); // pink-600 padrão
+  
+  // Buscar configurações e páginas do menu
+  useEffect(() => {
+    const fetchMenuPages = async () => {
+      try {
+        const pages = await getMenuPages();
+        setMenuPages(pages);
+      } catch (error) {
+        console.error('Erro ao buscar páginas do menu:', error);
+      }
+    };
+    
+    const fetchAppearanceSettings = async () => {
+      try {
+        const settings = await getPublicSettings();
+        
+        // Configurar cores do footer
+        if (settings && settings.footer_start_color) {
+          setFooterStartColor(settings.footer_start_color);
+        }
+        
+        if (settings && settings.footer_end_color) {
+          setFooterEndColor(settings.footer_end_color);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar configurações de aparência:', error);
+      }
+    };
+    
+    fetchMenuPages();
+    fetchAppearanceSettings();
+  }, []);
   return (
-    <footer className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-8">
+    <footer className={cn("text-white py-8 footer-gradient")}>
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
@@ -29,11 +67,25 @@ const Footer = () => {
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold mb-4">Conecte-se Conosco</h3>
+            <h3 className="text-lg font-semibold mb-4">Páginas</h3>
             <div className="space-y-2">
-              <Link to="/about" className="block text-pink-100 hover:text-white transition-colors">Sobre Nós</Link>
-              <Link to="/contact" className="block text-pink-100 hover:text-white transition-colors">Contato</Link>
-              <Link to="/privacy" className="block text-pink-100 hover:text-white transition-colors">Política de Privacidade</Link>
+              {menuPages.length > 0 ? (
+                menuPages.map((page) => (
+                  <Link 
+                    key={`footer-page-${page.id}`}
+                    to={`/${page.slug}`} 
+                    className="block text-pink-100 hover:text-white transition-colors"
+                  >
+                    {page.title}
+                  </Link>
+                ))
+              ) : (
+                <>
+                  <Link to="/about" className="block text-pink-100 hover:text-white transition-colors">Sobre Nós</Link>
+                  <Link to="/contact" className="block text-pink-100 hover:text-white transition-colors">Contato</Link>
+                  <Link to="/privacy" className="block text-pink-100 hover:text-white transition-colors">Política de Privacidade</Link>
+                </>
+              )}
             </div>
           </div>
         </div>

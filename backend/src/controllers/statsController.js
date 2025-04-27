@@ -1,4 +1,5 @@
-const { Category, Article, sequelize } = require('../models');
+const { Category, Article, sequelize, User, Comment } = require('../models');
+const { Op } = require('sequelize');
 
 // Obter estatísticas para o dashboard
 exports.getDashboardStats = async (req, res) => {
@@ -42,6 +43,85 @@ exports.getDashboardStats = async (req, res) => {
       limit: 5
     });
     
+    // Calcular estatísticas de crescimento
+    
+    // Categorias criadas este mês
+    const firstDayOfMonth = new Date();
+    firstDayOfMonth.setDate(1);
+    firstDayOfMonth.setHours(0, 0, 0, 0);
+    
+    const categoriesThisMonth = await Category.count({
+      where: {
+        createdAt: {
+          [Op.gte]: firstDayOfMonth
+        }
+      }
+    });
+    
+    // Artigos criados esta semana
+    const firstDayOfWeek = new Date();
+    firstDayOfWeek.setDate(firstDayOfWeek.getDate() - firstDayOfWeek.getDay());
+    firstDayOfWeek.setHours(0, 0, 0, 0);
+    
+    const articlesThisWeek = await Article.count({
+      where: {
+        createdAt: {
+          [Op.gte]: firstDayOfWeek
+        },
+        published: true
+      }
+    });
+    
+    // Calcular crescimento percentual de visualizações
+    const previousMonth = new Date();
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    
+    const viewsLastMonth = await Article.findOne({
+      attributes: [
+        [sequelize.fn('SUM', sequelize.col('views')), 'totalViews']
+      ],
+      where: {
+        updatedAt: {
+          [Op.lt]: firstDayOfMonth,
+          [Op.gte]: previousMonth
+        },
+        published: true
+      }
+    });
+    
+    const lastMonthViews = viewsLastMonth && viewsLastMonth.getDataValue('totalViews') ? Number(viewsLastMonth.getDataValue('totalViews')) : 0;
+    
+    // Calcular percentual de crescimento (evitar divisão por zero)
+    let viewsGrowthPercent = 0;
+    if (lastMonthViews > 0) {
+      viewsGrowthPercent = Math.round((totalViews - lastMonthViews) / lastMonthViews * 100);
+    }
+    
+    // Obter estatísticas de comentários
+    const commentStats = {
+      total: 0,
+      approved: 0,
+      pending: 0,
+      spam: 0
+    };
+    
+    const totalComments = await Comment.count();
+    const approvedComments = await Comment.count({ where: { status: 'approved' } });
+    const pendingComments = await Comment.count({ where: { status: 'pending' } });
+    const spamComments = await Comment.count({ where: { status: 'spam' } });
+    
+    commentStats.total = totalComments;
+    commentStats.approved = approvedComments;
+    commentStats.pending = pendingComments;
+    commentStats.spam = spamComments;
+    
+    // Calcular percentuais de comentários
+    const commentPercentages = {
+      approved: totalComments > 0 ? Math.round((approvedComments / totalComments) * 100) : 0,
+      pending: totalComments > 0 ? Math.round((pendingComments / totalComments) * 100) : 0,
+      spam: totalComments > 0 ? Math.round((spamComments / totalComments) * 100) : 0
+    };
+    
     // Obter contagem de artigos por categoria
     const articlesByCategory = await Category.findAll({
       attributes: [
@@ -62,7 +142,10 @@ exports.getDashboardStats = async (req, res) => {
     console.log('[BACKEND] Estatísticas obtidas com sucesso:', {
       categoryCount,
       articleCount,
-      totalViews
+      totalViews,
+      categoriesThisMonth,
+      articlesThisWeek,
+      viewsGrowthPercent
     });
     
     return res.status(200).json({
@@ -71,7 +154,12 @@ exports.getDashboardStats = async (req, res) => {
       totalViews,
       topArticles,
       recentArticles,
-      articlesByCategory
+      articlesByCategory,
+      categoriesThisMonth,
+      articlesThisWeek,
+      viewsGrowthPercent,
+      commentStats,
+      commentPercentages
     });
   } catch (error) {
     console.error('[BACKEND] Erro ao buscar estatísticas:', error);

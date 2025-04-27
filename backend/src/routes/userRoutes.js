@@ -11,8 +11,11 @@ router.get('/profile', userController.getUserProfile);
 
 // Rotas para administradores
 router.get('/', isAdmin, userController.getAllUsers);
+router.post('/', isAdmin, userController.createUser);
+router.delete('/:id', isAdmin, userController.deleteUser);
 router.patch('/:id/toggle-status', isAdmin, userController.toggleUserStatus);
 router.patch('/:id/promote', isAdmin, userController.promoteToAdmin);
+router.patch('/:id/change-role', isAdmin, userController.changeUserRole);
 
 // Rotas para o próprio usuário ou administradores
 router.get('/:id', isOwnerOrAdmin('id'), userController.getUserById);
