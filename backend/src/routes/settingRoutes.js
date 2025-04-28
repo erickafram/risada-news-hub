@@ -6,8 +6,7 @@ const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 // Rotas públicas (acessíveis sem autenticação)
 // Obter configurações públicas (aparência, etc.)
 router.get('/public/appearance', (req, res) => {
-  req.params.group = 'appearance';
-  settingController.getSettingsByGroup(req, res);
+  settingController.getSettingsByGroup({ ...req, params: { group: 'appearance' } }, res);
 });
 
 // Rotas protegidas (requerem autenticação)
