@@ -13,7 +13,7 @@ const SiteTitle: React.FC<SiteTitleProps> = ({
   metaDescription,
   ogImage
 }) => {
-  const [siteTitle, setSiteTitle] = useState('Risada News Hub');
+  const [siteTitle, setSiteTitle] = useState('Meme PMW');
   const [siteDescription, setSiteDescription] = useState('Portal de notícias e entretenimento');
   
   useEffect(() => {

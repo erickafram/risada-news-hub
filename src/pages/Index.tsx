@@ -1,18 +1,28 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import NewsCard from '@/components/news/NewsCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { NewsItem } from '@/components/news/NewsCard';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowUp, Newspaper, TrendingUp, MessageSquare } from 'lucide-react';
 import SiteTitle from '@/components/SiteTitle';
+import { useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { Heart, MessageCircle } from 'lucide-react';
+import ScrollToTop from '@/components/ui/scroll-to-top';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { Newspaper as NewspaperIcon } from 'lucide-react';
 
 const Index = () => {
   const [featuredNews, setFeaturedNews] = useState<NewsItem[]>([]);
   const [allArticles, setAllArticles] = useState<NewsItem[]>([]);
+  const [mostReadArticles, setMostReadArticles] = useState<NewsItem[]>([]);
+  const [mostCommentedArticles, setMostCommentedArticles] = useState<NewsItem[]>([]);
   const [categories, setCategories] = useState<{id: number, name: string, slug: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const { isAuthenticated, isAdmin } = useAuth();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search');
+  const { settings } = useSiteSettings();
   
   // Função para converter dados da API para o formato NewsItem
   const mapArticleToNewsItem = (article: any): NewsItem => ({
@@ -82,6 +92,38 @@ const Index = () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
         
+        // Se houver uma consulta de pesquisa, buscar artigos correspondentes
+        if (searchQuery) {
+          console.log('Realizando pesquisa por:', searchQuery);
+          setLoading(true);
+          
+          const searchResponse = await fetch(`${apiUrl}/api/articles?search=${encodeURIComponent(searchQuery)}`);
+          if (!searchResponse.ok) {
+            throw new Error(`Erro ao buscar resultados da pesquisa: ${searchResponse.status}`);
+          }
+          
+          const searchData = await searchResponse.json();
+          console.log('Resultados da pesquisa (dados brutos):', searchData);
+          console.log('Artigos encontrados:', searchData.articles ? searchData.articles.length : 0);
+          
+          if (!searchData.articles || searchData.articles.length === 0) {
+            console.log('Nenhum artigo encontrado para o termo:', searchQuery);
+            setAllArticles([]);
+            setFeaturedNews([]);
+            setLoading(false);
+            return;
+          }
+          
+          // Mapear diretamente os artigos para o formato NewsItem
+          const searchResults = searchData.articles.map(mapArticleToNewsItem);
+          console.log('Artigos processados para exibição:', searchResults);
+          
+          setAllArticles(searchResults);
+          setFeaturedNews([]); // Não mostrar artigos em destaque nos resultados da pesquisa
+          setLoading(false);
+          return; // Sair da função para não buscar os artigos normais
+        }
+        
         // Buscar artigos em destaque (os 3 mais recentes - página 1)
         const featuredResponse = await fetch(`${apiUrl}/api/articles?page=1&limit=3`);
         if (!featuredResponse.ok) {
@@ -109,8 +151,8 @@ const Index = () => {
           setFeaturedNews(featuredWithReactions.map(mapArticleToNewsItem));
         }
 
-        // Buscar todos os artigos começando pela página 2 (pulando os 3 primeiros)
-        const allArticlesResponse = await fetch(`${apiUrl}/api/articles?page=2&limit=30`);
+        // Buscar todos os artigos começando pela página 1 (agora buscando mais artigos)
+        const allArticlesResponse = await fetch(`${apiUrl}/api/articles?page=1&limit=12`);
         if (!allArticlesResponse.ok) {
           throw new Error(`Erro ao buscar todos os artigos: ${allArticlesResponse.status}`);
         }
@@ -133,7 +175,25 @@ const Index = () => {
         );
         
         if (allWithReactions.length > 0) {
-          setAllArticles(allWithReactions.map(mapArticleToNewsItem));
+          // Remover os artigos em destaque da lista principal para evitar duplicação
+          const featuredIds = featuredWithReactions.map(article => article.id);
+          const nonFeaturedArticles = allWithReactions.filter(article => !featuredIds.includes(article.id));
+          setAllArticles(nonFeaturedArticles.map(mapArticleToNewsItem));
+          
+          // Criar lista de artigos mais lidos (simulando com base nas visualizações ou reações)
+          // Aqui estamos usando as reações como métrica para "mais lidos"
+          const sortedByReactions = [...allWithReactions].sort((a, b) => {
+            const aReactions = (a.reactionCounts?.heart || 0) + (a.reactionCounts?.thumbsUp || 0);
+            const bReactions = (b.reactionCounts?.heart || 0) + (b.reactionCounts?.thumbsUp || 0);
+            return bReactions - aReactions;
+          });
+          setMostReadArticles(sortedByReactions.slice(0, 4).map(mapArticleToNewsItem));
+          
+          // Criar lista de artigos mais comentados
+          const sortedByComments = [...allWithReactions].sort((a, b) => {
+            return (b.commentCount || 0) - (a.commentCount || 0);
+          });
+          setMostCommentedArticles(sortedByComments.slice(0, 4).map(mapArticleToNewsItem));
         }
       } catch (error) {
         console.error('Erro ao buscar artigos:', error);
@@ -143,7 +203,7 @@ const Index = () => {
     };
 
     fetchArticles();
-  }, []);
+  }, [searchQuery]);
 
   return (
     <Layout>
@@ -156,46 +216,175 @@ const Index = () => {
           </div>
         ) : (
           <>
-            {/* Featured News Grid */}
-            {featuredNews.length > 0 && (
+            {/* Removida a seção Hero com o título do site */}
+
+            {/* Mostrar título de pesquisa se houver uma consulta */}
+            {searchQuery && (
+              <div className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h1 className="text-3xl font-bold mb-2 flex items-center">
+                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 w-1 h-8 rounded mr-3"></span>
+                  Resultados da pesquisa: "{searchQuery}"
+                </h1>
+                <p className="text-gray-600">
+                  {allArticles.length === 0 
+                    ? "Nenhum resultado encontrado. Tente outra pesquisa." 
+                    : `Encontramos ${allArticles.length} resultado${allArticles.length !== 1 ? 's' : ''}.`}
+                </p>
+              </div>
+            )}
+
+            {/* Featured News Grid - mostrar apenas se não for uma pesquisa */}
+            {!searchQuery && featuredNews.length > 0 && (
               <section className="mb-12">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                {/* Removido o título "Destaques" */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden rounded-xl shadow-md">
+                  {/* Notícia principal em destaque */}
                   {featuredNews.length > 0 && (
-                    <div className="lg:col-span-2 h-full">
-                      <NewsCard news={featuredNews[0]} featured={true} />
+                    <div className="lg:col-span-8 relative group">
+                      <Link to={`/article/${featuredNews[0].id}`} className="block relative overflow-hidden h-[450px]">
+                        <img 
+                          src={featuredNews[0].imageUrl} 
+                          alt={featuredNews[0].title} 
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-70"></div>
+                        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                          <div className="mb-2">
+                            <span className="bg-purple-600 text-white text-xs font-medium px-2.5 py-1 rounded">
+                              {featuredNews[0].category}
+                            </span>
+                            <span className="ml-2 text-xs opacity-75">
+                              {new Date(featuredNews[0].publishedAt).toLocaleDateString('pt-BR', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                          <h2 className="text-2xl md:text-3xl font-bold mb-2 line-clamp-3 hover:text-purple-300 transition-colors">
+                            {featuredNews[0].title}
+                          </h2>
+                          <p className="text-gray-200 line-clamp-2 mb-3">{featuredNews[0].excerpt}</p>
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="flex items-center gap-1">
+                              <Heart className="w-4 h-4" />
+                              {featuredNews[0].likes || 0}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MessageCircle className="w-4 h-4" />
+                              {featuredNews[0].comments || 0}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
                     </div>
                   )}
-                  <div className="lg:col-span-2 grid grid-cols-1 gap-4">
-                    {featuredNews.slice(1, 3).map((news) => (
-                      <NewsCard key={news.id} news={news} compact={true} />
+                  
+                  {/* Notícias secundárias */}
+                  <div className="lg:col-span-4 grid grid-rows-2 gap-4">
+                    {featuredNews.slice(1, 3).map((news, index) => (
+                      <Link key={news.id} to={`/article/${news.id}`} className="relative group overflow-hidden h-[220px] block">
+                        <img 
+                          src={news.imageUrl} 
+                          alt={news.title} 
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-70"></div>
+                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                          <div className="mb-1">
+                            <span className="bg-purple-600 text-white text-xs font-medium px-2 py-0.5 rounded">
+                              {news.category}
+                            </span>
+                          </div>
+                          <h3 className="text-lg font-bold line-clamp-2 hover:text-purple-300 transition-colors">
+                            {news.title}
+                          </h3>
+                        </div>
+                      </Link>
                     ))}
                   </div>
                 </div>
               </section>
             )}
 
-            {/* All Articles */}
-            {allArticles.length > 0 && (
-              <section className="mb-12">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b border-gray-200 pb-2">
-                  Todas as Notícias
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {allArticles.map((news) => (
-                    <NewsCard key={news.id} news={news} />
-                  ))}
+            {/* Layout principal com conteúdo e sidebar */}
+            {!searchQuery && (
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Conteúdo principal (70%) */}
+                <div className="lg:w-[70%]">
+                  {/* All Articles */}
+                  {allArticles.length > 0 && (
+                    <section>
+                      <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b border-gray-200 pb-2 flex items-center">
+                        <Newspaper className="mr-2 h-5 w-5 text-purple-600" />
+                        Últimas Notícias
+                      </h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {allArticles.map((news) => (
+                          <NewsCard key={news.id} news={news} />
+                        ))}
+                      </div>
+                    </section>
+                  )}
                 </div>
-              </section>
+
+                {/* Sidebar (30%) */}
+                {(mostReadArticles.length > 0 || mostCommentedArticles.length > 0) && (
+                  <div className="lg:w-[30%]">
+                    {/* Most Read Articles */}
+                    {mostReadArticles.length > 0 && (
+                      <div className="border border-gray-100 rounded-lg p-6 mb-8 shadow-sm bg-white hover:shadow-md transition-shadow">
+                        <h3 className="text-xl font-bold mb-4 text-gray-800 border-b border-gray-200 pb-2 flex items-center">
+                          <TrendingUp className="mr-2 h-5 w-5 text-purple-600" />
+                          Mais Lidos
+                        </h3>
+                        <div className="space-y-4">
+                          {mostReadArticles.map((news) => (
+                            <NewsCard key={news.id} news={news} compact={true} sidebar={true} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Most Commented Articles */}
+                    {mostCommentedArticles.length > 0 && (
+                      <div className="border border-gray-100 rounded-lg p-6 shadow-sm bg-white hover:shadow-md transition-shadow">
+                        <h3 className="text-xl font-bold mb-4 text-gray-800 border-b border-gray-200 pb-2 flex items-center">
+                          <MessageSquare className="mr-2 h-5 w-5 text-purple-600" />
+                          Mais Comentados
+                        </h3>
+                        <div className="space-y-4">
+                          {mostCommentedArticles.map((news) => (
+                            <NewsCard key={news.id} news={news} compact={true} sidebar={true} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Resultados da pesquisa */}
+            {searchQuery && allArticles.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {allArticles.map((news) => (
+                  <NewsCard key={news.id} news={news} />
+                ))}
+              </div>
             )}
 
             {/* Show message if no news */}
             {featuredNews.length === 0 && allArticles.length === 0 && (
-              <div className="text-center py-12">
+              <div className="text-center py-12 border border-gray-100 rounded-lg shadow-sm bg-white">
+                <Newspaper className="h-12 w-12 mx-auto text-gray-300 mb-3" />
                 <h2 className="text-2xl font-bold mb-4 text-gray-800">Nenhuma notícia disponível</h2>
                 <p className="text-gray-600">Volte mais tarde para conferir as novidades!</p>
                 {isAdmin && (
                   <p className="mt-4">
-                    <a href="/admin/article/new" className="text-primary hover:underline">Criar um novo artigo</a>
+                    <Link to="/admin/article/new" className="text-purple-600 hover:text-purple-800 hover:underline font-medium">
+                      Criar um novo artigo
+                    </Link>
                   </p>
                 )}
               </div>
@@ -203,6 +392,9 @@ const Index = () => {
           </>
         )}
       </div>
+      
+      {/* Botão para voltar ao topo */}
+      <ScrollToTop />
     </Layout>
   );
 };

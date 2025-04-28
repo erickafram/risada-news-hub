@@ -18,6 +18,7 @@ const statsRoutes = require('./routes/statsRoutes');
 const settingRoutes = require('./routes/settingRoutes');
 const pageRoutes = require('./routes/pageRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const favoriteRoutes = require('./routes/favoriteRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,7 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rota para verificar se um arquivo existe
-app.get('/check-file', (req, res) => {
+app.get('/api/check-file', (req, res) => {
   const filePath = req.query.path;
   if (!filePath) {
     return res.status(400).json({ exists: false, message: 'Caminho do arquivo não fornecido' });
@@ -61,6 +62,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/pages', pageRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/favorites', favoriteRoutes);
 
 // Rota de teste
 app.get('/', (req, res) => {

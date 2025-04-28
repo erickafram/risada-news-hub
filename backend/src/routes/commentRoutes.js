@@ -12,6 +12,7 @@ router.get('/count/:articleId', commentController.getCommentCount);
 // Rotas que requerem autenticação
 router.post('/article/:articleId', authenticate, commentController.addComment);
 router.delete('/:commentId', authenticate, commentController.deleteComment);
+router.get('/user', authenticate, commentController.getUserComments);
 
 // Rotas administrativas (apenas para administradores)
 router.get('/admin', authenticate, isAdmin, commentController.getAllComments);

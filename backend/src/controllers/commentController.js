@@ -371,6 +371,47 @@ exports.updateCommentStatus = async (req, res) => {
   }
 };
 
+// Método para obter comentários de um usuário específico
+exports.getUserComments = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Buscar comentários do usuário com informações do artigo
+    const comments = await Comment.findAll({
+      where: { user_id: userId },
+      include: [
+        {
+          model: Article,
+          as: 'article',
+          attributes: ['id', 'title', 'slug', 'featured_image', 'published_at']
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+    
+    // Formatar os comentários para a resposta
+    const formattedComments = comments.map(comment => {
+      return {
+        id: comment.id,
+        content: comment.content,
+        created_at: comment.created_at,
+        article: comment.article ? {
+          id: comment.article.id,
+          title: comment.article.title,
+          slug: comment.article.slug,
+          featuredImage: comment.article.featured_image,
+          publishedAt: comment.article.published_at
+        } : null
+      };
+    });
+    
+    return res.status(200).json(formattedComments);
+  } catch (error) {
+    console.error('Erro ao buscar comentários do usuário:', error);
+    return res.status(500).json({ message: 'Erro ao buscar comentários do usuário' });
+  }
+};
+
 // Configurar associações
 Comment.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 Comment.belongsTo(Article, { foreignKey: 'article_id', as: 'article' });
@@ -384,5 +425,6 @@ module.exports = {
   deleteComment: exports.deleteComment,
   getCommentCount: exports.getCommentCount,
   getAllComments: exports.getAllComments,
-  updateCommentStatus: exports.updateCommentStatus
+  updateCommentStatus: exports.updateCommentStatus,
+  getUserComments: exports.getUserComments
 };

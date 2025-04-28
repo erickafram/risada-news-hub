@@ -4,9 +4,10 @@ import Layout from '@/components/layout/Layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle, Loader2, ArrowLeft, ThumbsUp, Angry, Laugh, Frown } from 'lucide-react';
+import { Heart, MessageCircle, Loader2, ArrowLeft, ThumbsUp, Angry, Laugh, Frown, Bookmark, BookmarkCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Article {
   id: number;
@@ -63,6 +64,9 @@ const ArticlePage = () => {
   const [captchaValue, setCaptchaValue] = useState<string | null>(null);
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [checkingFavorite, setCheckingFavorite] = useState(false);
+  const { toast } = useToast();
 
   // Verificar se o usuário está autenticado
   useEffect(() => {
@@ -77,6 +81,11 @@ const ArticlePage = () => {
     
     checkAuth();
   }, []);
+
+  // Efeito para garantir que a página sempre inicie no topo
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   // Buscar o artigo e as reações
   useEffect(() => {
@@ -220,6 +229,95 @@ const ArticlePage = () => {
         laugh: 0,
         angry: 0,
         sad: 0
+      });
+    }
+  };
+
+  // Verificar se o artigo está nos favoritos do usuário
+  useEffect(() => {
+    const checkIfFavorite = async () => {
+      if (!id || !isAuthenticated || !authToken) return;
+      
+      setCheckingFavorite(true);
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${apiUrl}/api/favorites/check/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setIsFavorite(data.isFavorite);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar favorito:', error);
+      } finally {
+        setCheckingFavorite(false);
+      }
+    };
+    
+    if (authChecked) {
+      checkIfFavorite();
+    }
+  }, [id, isAuthenticated, authToken, authChecked]);
+
+  // Função para adicionar ou remover dos favoritos
+  const toggleFavorite = async () => {
+    if (!id || !isAuthenticated || !authToken) {
+      toast({
+        title: "Ação não permitida",
+        description: "Você precisa estar logado para favoritar artigos.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      if (isFavorite) {
+        // Remover dos favoritos
+        const response = await fetch(`${apiUrl}/api/favorites/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (response.ok) {
+          setIsFavorite(false);
+          toast({
+            title: "Removido dos favoritos",
+            description: "Artigo removido dos seus favoritos com sucesso."
+          });
+        }
+      } else {
+        // Adicionar aos favoritos
+        const response = await fetch(`${apiUrl}/api/favorites`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ articleId: id })
+        });
+        
+        if (response.ok) {
+          setIsFavorite(true);
+          toast({
+            title: "Adicionado aos favoritos",
+            description: "Artigo adicionado aos seus favoritos com sucesso."
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar favorito:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao atualizar os favoritos.",
+        variant: "destructive"
       });
     }
   };
@@ -423,60 +521,75 @@ const ArticlePage = () => {
           </Link>
         </div>
         
-        <div className="overflow-hidden max-w-4xl mx-auto bg-white/80 backdrop-blur-sm">
+        <div className="overflow-hidden max-w-4xl mx-auto bg-white shadow-md rounded-xl">
           {article.featuredImage && (
-            <div className="relative h-96">
+            <div className="relative h-[400px] overflow-hidden">
               <img
                 src={article.featuredImage}
                 alt={article.title}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="w-full h-full object-cover rounded-t-xl"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                <div className="flex items-center gap-2 mb-2">
+                  {article.category && (
+                    <Link to={`/category/${article.category.slug}`}>
+                      <Badge className="bg-purple-600 hover:bg-purple-700 text-white border-none">
+                        {article.category.name}
+                      </Badge>
+                    </Link>
+                  )}
+                  <span className="text-sm text-white/80">
+                    {new Date(article.publishedAt || article.createdAt).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
           <div className="p-8">
-            <div className="flex items-center gap-2 mb-4">
-              {article.category && (
-                <Link to={`/category/${article.category.slug}`}>
-                  <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
-                    {article.category.name}
-                  </Badge>
-                </Link>
-              )}
-              <span className="text-sm text-gray-500">
-                {new Date(article.publishedAt || article.createdAt).toLocaleDateString('pt-BR', {
-                  day: '2-digit',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </span>
-            </div>
-            
-            <h1 className="text-4xl font-bold mb-4 text-gray-800">
+            <h1 className="text-4xl font-bold mb-6 text-gray-800 leading-tight">
               {article.title}
             </h1>
             
             {article.author && (
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold mr-3">
+              <div className="flex items-center mb-8 border-b border-gray-100 pb-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold mr-3 shadow-sm">
                   {article.author.fullName.charAt(0)}
                 </div>
-                <span className="text-sm font-medium text-gray-700">
-                  Por {article.author.fullName}
-                </span>
+                <div>
+                  <span className="block text-sm font-medium text-gray-900">
+                    Por {article.author.fullName}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(article.publishedAt || article.createdAt).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
               </div>
             )}
             
             {article.summary && (
-              <p className="text-lg leading-relaxed text-gray-700 mb-6 font-medium italic">
-                {article.summary}
-              </p>
+              <div className="bg-gray-50 border-l-4 border-purple-600 p-4 rounded-r-lg mb-8">
+                <p className="text-lg leading-relaxed text-gray-700 font-medium italic">
+                  {article.summary}
+                </p>
+              </div>
             )}
             
-            <div className="prose max-w-none text-gray-700 mb-8" 
+            <div className="prose max-w-none text-gray-700 mb-8 leading-relaxed" 
               dangerouslySetInnerHTML={{ __html: article.content }}
             />
 
-            <div className="flex flex-wrap items-center gap-3 mb-8">
+            <div className="flex flex-wrap items-center gap-3 mb-8 border-t border-gray-100 pt-6">
               <Button
                 variant="ghost"
                 className={`flex items-center gap-1 ${reaction === 'heart' ? 'text-pink-600 bg-pink-50' : 'text-gray-600'}`}
@@ -524,6 +637,18 @@ const ArticlePage = () => {
               
               <Button
                 variant="ghost"
+                className={`flex items-center gap-1 ${isFavorite ? 'text-yellow-600 bg-yellow-50' : 'text-gray-600'}`}
+                onClick={toggleFavorite}
+              >
+                {isFavorite ? (
+                  <BookmarkCheck className={`h-5 w-5 ${isFavorite ? 'fill-current' : ''}`} />
+                ) : (
+                  <Bookmark className={`h-5 w-5 ${isFavorite ? 'fill-current' : ''}`} />
+                )}
+              </Button>
+              
+              <Button
+                variant="ghost"
                 className="flex items-center gap-1 text-gray-600 ml-auto"
                 onClick={() => document.getElementById('comment-input')?.focus()}
               >
@@ -532,73 +657,84 @@ const ArticlePage = () => {
               </Button>
             </div>
 
-            <div className="pt-6">
-              <h3 className="text-xl font-semibold mb-4">Comentários</h3>
+            <div className="mt-12 border-t border-gray-100 pt-8">
+              <h3 className="text-2xl font-bold mb-6 text-gray-800 flex items-center">
+                <MessageCircle className="h-6 w-6 mr-2 text-purple-600" />
+                Comentários ({comments.length})
+              </h3>
               
               {isAuthenticated ? (
-                <form onSubmit={handleComment} className="mb-6">
-                  <Textarea
-                    id="comment-input"
-                    placeholder="Compartilhe sua opinião..."
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    className="mb-2"
-                  />
-                  <div className="mb-4 mt-2">
+                <form onSubmit={handleComment} className="mb-8">
+                  <div className="mb-4">
+                    <Textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="Deixe seu comentário..."
+                      className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      rows={4}
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
                     <ReCAPTCHA
                       ref={recaptchaRef}
                       sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" // Chave de teste do reCAPTCHA
                       onChange={handleCaptchaChange}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Este site é protegido por reCAPTCHA para evitar spam.</p>
                   </div>
+                  
                   <Button 
                     type="submit" 
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                    disabled={!isCaptchaVerified}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    disabled={!isCaptchaVerified || !comment.trim()}
                   >
-                    Enviar Comentário
+                    Enviar comentário
                   </Button>
                 </form>
               ) : (
-                <div className="bg-gray-50 p-6 rounded-lg mb-6 text-center">
-                  <p className="text-gray-700 mb-4">Você precisa estar logado para comentar neste artigo.</p>
-                  <Link to="/login" className="inline-block">
-                    <Button className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-                      Fazer Login
-                    </Button>
+                <div className="bg-gray-50 p-4 rounded-lg mb-8 text-center">
+                  <p className="text-gray-600 mb-4">Faça login para deixar um comentário</p>
+                  <Link to="/login" className="inline-block bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors">
+                    Fazer login
                   </Link>
                 </div>
               )}
-
-              <div className="space-y-4">
-                {comments.length > 0 ? (
-                  comments.map((comment) => (
-                    <div key={comment.id} className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex items-center mb-2">
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold mr-2">
+              
+              {comments.length > 0 ? (
+                <div className="space-y-6">
+                  {comments.map((comment) => (
+                    <Card key={comment.id} className="p-4 border border-gray-100 shadow-sm rounded-xl hover:shadow-md transition-shadow">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
                           {comment.user && comment.user.fullName ? comment.user.fullName.charAt(0) : '?'}
                         </div>
-                        <span className="font-medium">{comment.user && comment.user.fullName ? comment.user.fullName : 'Usuário'}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <span className="font-medium text-gray-900">{comment.user && comment.user.fullName}</span>
+                              <span className="text-xs text-gray-500 ml-2">
+                                {new Date(comment.created_at).toLocaleDateString('pt-BR', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-gray-700 whitespace-pre-line">{comment.content}</p>
+                        </div>
                       </div>
-                      <p className="text-gray-700">{comment.content}</p>
-                      <span className="text-sm text-gray-500 mt-2 block">
-                        {new Date(comment.created_at || new Date()).toLocaleDateString('pt-BR', {
-                          day: '2-digit',
-                          month: 'long',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    Nenhum comentário ainda. Seja o primeiro a comentar!
-                  </div>
-                )}
-              </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <MessageCircle className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                  <p className="text-gray-500">Nenhum comentário ainda. Seja o primeiro a comentar!</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

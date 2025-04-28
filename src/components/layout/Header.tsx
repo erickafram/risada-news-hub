@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -67,6 +66,12 @@ const Header = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Searching for:', searchQuery);
+    
+    if (searchQuery.trim()) {
+      // Redirecionar para a página inicial com o parâmetro de pesquisa
+      navigate(`/?search=${encodeURIComponent(searchQuery.trim())}`);
+      setIsMenuOpen(false); // Fechar o menu móvel se estiver aberto
+    }
   };
 
   const categories = [
