@@ -62,33 +62,32 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
   };
   
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <span className="text-sm text-gray-500 mr-1">Compartilhar:</span>
+    <div className={`flex items-center gap-3 justify-center ${className}`}>
       <Button 
         variant="outline" 
         size="sm" 
-        className="bg-[#25D366] hover:bg-[#128C7E] text-white border-none rounded-full p-2 h-8 w-8"
+        className="bg-[#25D366] hover:bg-[#128C7E] text-white border-none rounded-md p-2 h-9 w-9 shadow-sm"
         onClick={shareOnWhatsApp}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="white">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
         </svg>
       </Button>
       <Button 
         variant="outline" 
         size="sm" 
-        className="bg-[#1877F2] hover:bg-[#166FE5] text-white border-none rounded-full p-2 h-8 w-8"
+        className="bg-[#1877F2] hover:bg-[#166FE5] text-white border-none rounded-md p-2 h-9 w-9 shadow-sm"
         onClick={shareOnFacebook}
       >
-        <Facebook size={16} />
+        <Facebook size={18} />
       </Button>
       <Button 
         variant="outline" 
         size="sm" 
-        className="bg-[#1DA1F2] hover:bg-[#0c85d0] text-white border-none rounded-full p-2 h-8 w-8"
+        className="bg-[#1DA1F2] hover:bg-[#0c85d0] text-white border-none rounded-md p-2 h-9 w-9 shadow-sm"
         onClick={shareOnTwitter}
       >
-        <Twitter size={16} />
+        <Twitter size={18} />
       </Button>
     </div>
   );
@@ -118,6 +117,8 @@ const ArticlePage = () => {
   const recaptchaRef = useRef<ReCAPTCHA>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [checkingFavorite, setCheckingFavorite] = useState(false);
+  const [popularArticles, setPopularArticles] = useState<Article[]>([]);
+  const [loadingPopular, setLoadingPopular] = useState(false);
   const { toast } = useToast();
 
   // Verificar se o usuário está autenticado
@@ -137,6 +138,32 @@ const ArticlePage = () => {
   // Efeito para garantir que a página sempre inicie no topo
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, [id]);
+  
+  // Buscar artigos populares da semana
+  useEffect(() => {
+    const fetchPopularArticles = async () => {
+      setLoadingPopular(true);
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${apiUrl}/api/articles?sort=views&limit=4`);
+        
+        if (!response.ok) {
+          throw new Error('Erro ao buscar artigos populares');
+        }
+        
+        const data = await response.json();
+        // Garantir que o artigo atual não esteja na lista de populares
+        const filteredArticles = data.articles.filter((article: Article) => article.id !== Number(id));
+        setPopularArticles(filteredArticles.slice(0, 4));
+      } catch (error) {
+        console.error('Erro ao buscar artigos populares:', error);
+      } finally {
+        setLoadingPopular(false);
+      }
+    };
+    
+    fetchPopularArticles();
   }, [id]);
 
   // Buscar o artigo e as reações
@@ -573,42 +600,47 @@ const ArticlePage = () => {
           </Link>
         </div>
         
-        <div className="overflow-hidden max-w-4xl mx-auto bg-white shadow-md rounded-xl">
+        <div className="overflow-hidden max-w-4xl mx-auto bg-white">
+          <div className="p-8 pb-4">
+            <h1 className="text-4xl font-bold mb-4 text-gray-800 leading-tight">
+              {article.title}
+            </h1>
+            
+            <div className="flex flex-wrap items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                {article.category && (
+                  <Link to={`/category/${article.category.slug}`}>
+                    <Badge className="bg-purple-600 hover:bg-purple-700 text-white border-none">
+                      {article.category.name}
+                    </Badge>
+                  </Link>
+                )}
+                <span className="text-sm text-gray-500">
+                  {new Date(article.publishedAt || article.createdAt).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </span>
+              </div>
+              
+              {/* Botões de compartilhamento no início do artigo */}
+              <div className="flex justify-center w-full">
+                <ShareButtons article={article} />
+              </div>
+            </div>
+          </div>
+          
           {article.featuredImage && (
             <div className="relative h-[400px] overflow-hidden">
               <img
                 src={article.featuredImage}
                 alt={article.title}
-                className="w-full h-full object-cover rounded-t-xl"
+                className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
-              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                <div className="flex items-center gap-2 mb-2">
-                  {article.category && (
-                    <Link to={`/category/${article.category.slug}`}>
-                      <Badge className="bg-purple-600 hover:bg-purple-700 text-white border-none">
-                        {article.category.name}
-                      </Badge>
-                    </Link>
-                  )}
-                  <span className="text-sm text-white/80">
-                    {new Date(article.publishedAt || article.createdAt).toLocaleDateString('pt-BR', {
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric'
-                    })}
-                  </span>
-                </div>
-              </div>
             </div>
           )}
           <div className="p-8">
-            <h1 className="text-4xl font-bold mb-6 text-gray-800 leading-tight">
-              {article.title}
-            </h1>
-            
-            {/* Botões de compartilhamento no início do artigo */}
-            <ShareButtons article={article} className="mb-6" />
             
             {article.author && (
               <div className="flex items-center mb-8 border-b border-gray-100 pb-6">
@@ -645,9 +677,8 @@ const ArticlePage = () => {
             />
             
             {/* Botões de compartilhamento no final do conteúdo do artigo */}
-            <div className="border-t border-gray-100 pt-6 mb-6">
-              <p className="text-gray-500 mb-3">Gostou deste artigo? Compartilhe com seus amigos:</p>
-              <ShareButtons article={article} />
+            <div id="share-section" className="border-t border-gray-100 pt-6 mb-6 text-center">
+              <ShareButtons article={article} className="mt-3" />
             </div>
 
             <div className="flex flex-wrap items-center gap-3 mb-8 border-t border-gray-100 pt-6">
@@ -728,10 +759,63 @@ const ArticlePage = () => {
                 }}
               >
                 <Share2 className="h-5 w-5" />
-                Compartilhar
               </Button>
             </div>
 
+            {/* Seção "Leia Mais" com artigos populares */}
+            <div className="mt-12 border-t border-gray-100 pt-8">
+              <h3 className="text-2xl font-bold mb-6 text-gray-800 flex items-center justify-center">
+                Leia Mais
+              </h3>
+              
+              {loadingPopular ? (
+                <div className="flex justify-center my-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                </div>
+              ) : popularArticles.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                  {popularArticles.map((popularArticle) => (
+                    <Link 
+                      to={`/article/${popularArticle.id}`} 
+                      key={popularArticle.id}
+                      className="group hover:no-underline"
+                    >
+                      <div className="overflow-hidden rounded-lg bg-white h-full flex flex-col hover:shadow-md transition-shadow">
+                        {popularArticle.featuredImage && (
+                          <div className="h-40 overflow-hidden">
+                            <img 
+                              src={popularArticle.featuredImage} 
+                              alt={popularArticle.title} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        )}
+                        <div className="p-4 flex-1 flex flex-col">
+                          <h4 className="font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-purple-600 transition-colors">
+                            {popularArticle.title}
+                          </h4>
+                          {popularArticle.summary && (
+                            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                              {popularArticle.summary}
+                            </p>
+                          )}
+                          <div className="mt-auto flex items-center text-xs text-gray-500">
+                            <span>
+                              {new Date(popularArticle.publishedAt || popularArticle.createdAt).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            
             <div className="mt-12 border-t border-gray-100 pt-8">
               <h3 className="text-2xl font-bold mb-6 text-gray-800 flex items-center">
                 <MessageCircle className="h-6 w-6 mr-2 text-purple-600" />
