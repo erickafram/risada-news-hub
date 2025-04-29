@@ -58,6 +58,11 @@
               return `https://memepmw.online${url}`;
             }
           }
+
+          // Corrige URLs de imagens com data-src
+          if (url.includes('data-src="http://167.172.152.174:3001')) {
+            return url.replace('data-src="http://167.172.152.174:3001', 'data-src="https://memepmw.online');
+          }
           
           return url;
         }

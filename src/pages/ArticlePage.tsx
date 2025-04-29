@@ -616,12 +616,18 @@ const ArticlePage = () => {
           {article.featuredImage && (
             <div className="px-8 sm:px-4 mb-4">
               <div className="relative overflow-hidden image-container mb-4">
-                {/* Imagem principal com lazy loading */}
+                {/* Imagem principal - usando src diretamente para garantir carregamento */}
                 <img
-                  data-src={article.featuredImage}
+                  src={article.featuredImage}
                   alt={article.title}
-                  className="image-full w-full rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
-                  loading="lazy"
+                  className="w-full rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+                  onError={(e) => {
+                    // Tenta corrigir URLs com IP
+                    const target = e.target as HTMLImageElement;
+                    if (target.src.includes('167.172.152.174:3001')) {
+                      target.src = target.src.replace('http://167.172.152.174:3001', 'https://memepmw.online');
+                    }
+                  }}
                 />
               </div>
               
@@ -678,9 +684,19 @@ const ArticlePage = () => {
                     const alt = altMatch ? altMatch[1] : '';
                     
                     // Substitui a tag img por uma versão otimizada
+                    // Corrige URLs com IP
+                    const fixedSrc = src.includes('167.172.152.174:3001') 
+                      ? src.replace('http://167.172.152.174:3001', 'https://memepmw.online')
+                      : src;
+                      
                     return `
                       <div class="image-container my-8 text-center">
-                        <img class="image-full w-full rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300" data-src="${src}" alt="${alt}" loading="lazy" />
+                        <img 
+                          class="w-full rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300" 
+                          src="${fixedSrc}" 
+                          alt="${alt}" 
+                          onerror="if(this.src.includes('167.172.152.174:3001')){this.src=this.src.replace('http://167.172.152.174:3001', 'https://memepmw.online');}" 
+                        />
                         ${alt ? `<p class="text-sm text-gray-500 mt-2 italic">${alt}</p>` : ''}
                       </div>
                     `;
@@ -797,18 +813,18 @@ const ArticlePage = () => {
                       <div className="overflow-hidden rounded-lg bg-white h-full flex flex-col hover:shadow-md transition-shadow">
                         {popularArticle.featuredImage && (
                           <div className="h-40 sm:h-32 overflow-hidden image-container">
-                            {/* Placeholder de baixa qualidade */}
+                            {/* Imagem principal */}
                             <img 
-                              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" 
-                              alt="" 
-                              className="image-placeholder w-full h-full object-cover"
-                            />
-                            {/* Imagem principal com lazy loading */}
-                            <img 
-                              data-src={popularArticle.featuredImage} 
+                              src={popularArticle.featuredImage} 
                               alt={popularArticle.title} 
-                              className="image-full w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 card-image"
-                              loading="lazy"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 card-image"
+                              onError={(e) => {
+                                // Tenta corrigir URLs com IP
+                                const target = e.target as HTMLImageElement;
+                                if (target.src.includes('167.172.152.174:3001')) {
+                                  target.src = target.src.replace('http://167.172.152.174:3001', 'https://memepmw.online');
+                                }
+                              }}
                             />
                           </div>
                         )}
