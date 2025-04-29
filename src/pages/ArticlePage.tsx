@@ -606,31 +606,36 @@ const ArticlePage = () => {
           </Button>
         </div>
         
-        <div className="overflow-hidden max-w-4xl mx-auto bg-white">
-          <div className="p-8 pb-4">
-            <h1 className="text-4xl font-bold mb-4 text-gray-800 leading-tight">
+        <div className="overflow-hidden max-w-4xl mx-auto bg-white shadow-sm rounded-xl">
+          <div className="p-8 pb-4 sm:p-4 sm:pb-2">
+            <h1 className="text-4xl font-bold mb-6 text-gray-800 leading-tight sm:text-2xl sm:mb-4">
               {article.title}
             </h1>
-            
-            <div className="flex flex-wrap items-center justify-center mb-8">
-              {/* Botões de compartilhamento no início do artigo */}
-              <ShareButtons article={article} />
-            </div>
           </div>
           
           {article.featuredImage && (
-            <div className="relative h-[400px] overflow-hidden">
-              <img
-                src={article.featuredImage}
-                alt={article.title}
-                className="w-full h-full object-cover"
-              />
+            <div className="px-8 sm:px-4 mb-4">
+              <div className="relative overflow-hidden image-container mb-4">
+                {/* Imagem principal com lazy loading */}
+                <img
+                  data-src={article.featuredImage}
+                  alt={article.title}
+                  className="image-full w-full rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+                  loading="lazy"
+                />
+              </div>
+              
+              {/* Botões de compartilhamento abaixo da imagem */}
+              <div className="flex justify-center items-center py-4 px-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl shadow-sm border border-gray-100">
+                <span className="mr-4 text-gray-700 font-medium">Compartilhar:</span>
+                <ShareButtons article={article} className="gap-5" />
+              </div>
             </div>
           )}
-          <div className="p-8">
+          <div className="p-8 pt-4 sm:p-4 sm:pt-2">
             
             {article.author && (
-              <div className="flex items-center mb-8 border-b border-gray-100 pb-6">
+              <div className="flex items-center mb-8 sm:mb-4 border-b border-gray-100 pb-6 sm:pb-4">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold mr-3 shadow-sm">
                   {article.author.fullName.charAt(0)}
                 </div>
@@ -652,20 +657,42 @@ const ArticlePage = () => {
             )}
             
             {article.summary && (
-              <div className="bg-gray-50 border-l-4 border-purple-600 p-4 rounded-r-lg mb-8">
-                <p className="text-lg leading-relaxed text-gray-700 font-medium italic">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-purple-600 p-6 sm:p-5 rounded-r-xl mb-8 sm:mb-6 shadow-sm">
+                <p className="text-lg sm:text-base leading-relaxed text-gray-700 font-medium italic article-summary">
                   {article.summary}
                 </p>
               </div>
             )}
             
-            <div className="prose max-w-none text-gray-700 mb-8 leading-relaxed" 
-              dangerouslySetInnerHTML={{ __html: article.content }}
+            <div className="prose max-w-none text-gray-700 mb-8 sm:mb-4 leading-relaxed sm:prose-sm article-content" 
+              dangerouslySetInnerHTML={{ 
+                __html: article.content.replace(
+                  /<img([^>]*)>/g, 
+                  (match, attributes) => {
+                    // Extrai o src da imagem
+                    const srcMatch = attributes.match(/src=['"]([^'"]*)['"]/);
+                    if (!srcMatch) return match;
+                    
+                    const src = srcMatch[1];
+                    const altMatch = attributes.match(/alt=['"]([^'"]*)['"]/);
+                    const alt = altMatch ? altMatch[1] : '';
+                    
+                    // Substitui a tag img por uma versão otimizada
+                    return `
+                      <div class="image-container my-8 text-center">
+                        <img class="image-full w-full rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300" data-src="${src}" alt="${alt}" loading="lazy" />
+                        ${alt ? `<p class="text-sm text-gray-500 mt-2 italic">${alt}</p>` : ''}
+                      </div>
+                    `;
+                  }
+                ) 
+              }}
             />
             
             {/* Botões de compartilhamento no final do conteúdo do artigo */}
-            <div id="share-section" className="border-t border-gray-100 pt-6 mb-6 text-center">
-              <ShareButtons article={article} className="mt-3" />
+            <div id="share-section" className="border-t border-gray-100 pt-8 pb-4 mb-6 text-center">
+              <h4 className="text-lg font-medium text-gray-700 mb-4">Gostou deste artigo? Compartilhe!</h4>
+              <ShareButtons article={article} className="gap-5 justify-center" />
             </div>
 
             <div className="flex flex-wrap items-center gap-3 mb-8 border-t border-gray-100 pt-6">
@@ -750,8 +777,8 @@ const ArticlePage = () => {
             </div>
 
             {/* Seção "Leia Mais" com artigos populares */}
-            <div className="mt-12 border-t border-gray-100 pt-8">
-              <h3 className="text-2xl font-bold mb-6 text-gray-800 flex items-center justify-center">
+            <div className="mt-12 sm:mt-8 border-t border-gray-100 pt-8 sm:pt-4">
+              <h3 className="text-2xl font-bold mb-6 sm:mb-4 text-gray-800 flex items-center justify-center">
                 Leia Mais
               </h3>
               
@@ -760,7 +787,7 @@ const ArticlePage = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
                 </div>
               ) : popularArticles.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-3 mb-12 sm:mb-6">
                   {popularArticles.map((popularArticle) => (
                     <Link 
                       to={`/article/${popularArticle.id}`} 
@@ -769,20 +796,28 @@ const ArticlePage = () => {
                     >
                       <div className="overflow-hidden rounded-lg bg-white h-full flex flex-col hover:shadow-md transition-shadow">
                         {popularArticle.featuredImage && (
-                          <div className="h-40 overflow-hidden">
+                          <div className="h-40 sm:h-32 overflow-hidden image-container">
+                            {/* Placeholder de baixa qualidade */}
                             <img 
-                              src={popularArticle.featuredImage} 
+                              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" 
+                              alt="" 
+                              className="image-placeholder w-full h-full object-cover"
+                            />
+                            {/* Imagem principal com lazy loading */}
+                            <img 
+                              data-src={popularArticle.featuredImage} 
                               alt={popularArticle.title} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              className="image-full w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 card-image"
+                              loading="lazy"
                             />
                           </div>
                         )}
-                        <div className="p-4 flex-1 flex flex-col">
-                          <h4 className="font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-purple-600 transition-colors">
+                        <div className="p-4 sm:p-3 flex-1 flex flex-col">
+                          <h4 className="font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-purple-600 transition-colors card-title">
                             {popularArticle.title}
                           </h4>
                           {popularArticle.summary && (
-                            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                            <p className="text-sm text-gray-600 line-clamp-2 mb-3 card-summary">
                               {popularArticle.summary}
                             </p>
                           )}

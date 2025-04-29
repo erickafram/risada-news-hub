@@ -21,6 +21,149 @@
     <div id="root"></div>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    
+    <!-- Script para interceptar chamadas para localhost:3001 e redirecioná-las para o servidor de produção -->
+    <script>
+      // Este script intercepta todas as chamadas fetch e XMLHttpRequest para localhost:3001
+      // e as redireciona para o servidor de produção
+      (function() {
+        // Função para corrigir URLs de imagens e APIs
+        function fixUrl(url) {
+          if (typeof url !== 'string') return url;
+          
+          // Corrige URLs com localhost:3001
+          if (url.includes('localhost:3001')) {
+            return url.replace('http://localhost:3001', 'https://memepmw.online');
+          }
+          
+          // Corrige URLs com o IP do servidor (problema de Mixed Content)
+          if (url.includes('167.172.152.174:3001')) {
+            return url.replace('http://167.172.152.174:3001', 'https://memepmw.online');
+          }
+          
+          // Garante que as chamadas para /api funcionem corretamente
+          if (url.startsWith('/api')) {
+            return `https://memepmw.online${url}`;
+          }
+          
+          // Corrige caminhos de uploads
+          if (url.includes('/uploads/')) {
+            // Se a URL já é absoluta mas usa HTTP, converte para HTTPS
+            if (url.startsWith('http://') && !url.startsWith('http://localhost')) {
+              return url.replace('http://', 'https://');
+            }
+            
+            // Se é um caminho relativo, adiciona o domínio
+            if (url.startsWith('/uploads/')) {
+              return `https://memepmw.online${url}`;
+            }
+          }
+          
+          return url;
+        }
+        
+        // Verifica se estamos em ambiente de produção
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        
+        if (isProduction) {
+          // Intercepta o fetch API
+          const originalFetch = window.fetch;
+          window.fetch = function(url, options) {
+            const fixedUrl = fixUrl(url);
+            if (fixedUrl !== url) {
+              console.log(`[API Redirect] Redirecionando ${url} para ${fixedUrl}`);
+            }
+            return originalFetch(fixedUrl, options);
+          };
+
+          // Intercepta XMLHttpRequest
+          const originalOpen = XMLHttpRequest.prototype.open;
+          XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+            const fixedUrl = fixUrl(url);
+            if (fixedUrl !== url) {
+              console.log(`[API Redirect] Redirecionando XHR ${url} para ${fixedUrl}`);
+            }
+            return originalOpen.call(this, method, fixedUrl, async, user, password);
+          };
+          
+          // Corrige as URLs das imagens já carregadas
+          setTimeout(() => {
+            document.querySelectorAll('img').forEach(img => {
+              if (img.src) {
+                const originalSrc = img.src;
+                const fixedSrc = fixUrl(originalSrc);
+                if (fixedSrc !== originalSrc) {
+                  console.log(`[Image Fix] Corrigindo imagem de ${originalSrc} para ${fixedSrc}`);
+                  img.src = fixedSrc;
+                }
+              }
+            });
+          }, 1000);
+          
+          // Observa novas imagens sendo adicionadas ao DOM
+          const observer = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+              if (mutation.addedNodes) {
+                mutation.addedNodes.forEach(node => {
+                  if (node.tagName === 'IMG' && node.src) {
+                    const originalSrc = node.src;
+                    const fixedSrc = fixUrl(originalSrc);
+                    if (fixedSrc !== originalSrc) {
+                      console.log(`[Image Fix] Corrigindo nova imagem de ${originalSrc} para ${fixedSrc}`);
+                      node.src = fixedSrc;
+                    }
+                  } else if (node.querySelectorAll) {
+                    node.querySelectorAll('img').forEach(img => {
+                      if (img.src) {
+                        const originalSrc = img.src;
+                        const fixedSrc = fixUrl(originalSrc);
+                        if (fixedSrc !== originalSrc) {
+                          console.log(`[Image Fix] Corrigindo imagem dentro de novo elemento de ${originalSrc} para ${fixedSrc}`);
+                          img.src = fixedSrc;
+                        }
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          });
+          
+          observer.observe(document.body, { childList: true, subtree: true });
+          
+          console.log('[API Redirect] Interceptação de API e correção de imagens ativadas para ambiente de produção');
+          
+          // Adiciona um hook para corrigir URLs de imagens em elementos de estilo
+          const originalSetAttribute = Element.prototype.setAttribute;
+          Element.prototype.setAttribute = function(name, value) {
+            if ((name === 'src' || name === 'href' || name === 'background' || name === 'poster') && typeof value === 'string') {
+              const fixedValue = fixUrl(value);
+              if (fixedValue !== value) {
+                console.log(`[Attribute Fix] Corrigindo atributo ${name} de ${value} para ${fixedValue}`);
+                return originalSetAttribute.call(this, name, fixedValue);
+              }
+            } else if (name === 'style' && typeof value === 'string' && value.includes('url(')) {
+              // Corrige URLs em estilos inline
+              const fixedValue = value.replace(/url\(['"](.*?)['"]\)/g, (match, url) => {
+                const fixedUrl = fixUrl(url);
+                if (fixedUrl !== url) {
+                  console.log(`[Style Fix] Corrigindo URL em estilo de ${url} para ${fixedUrl}`);
+                  return `url('${fixedUrl}')`;
+                }
+                return match;
+              });
+              if (fixedValue !== value) {
+                return originalSetAttribute.call(this, name, fixedValue);
+              }
+            }
+            return originalSetAttribute.call(this, name, value);
+          };
+        } else {
+          console.log('[API Redirect] Ambiente de desenvolvimento detectado, sem interceptação');
+        }
+      })();
+    </script>
+    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

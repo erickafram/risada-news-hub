@@ -1,0 +1,118 @@
+/* Otimização de imagens */
+
+/* Aplica lazy loading para todas as imagens */
+img {
+  transition: opacity 0.3s ease-in-out;
+  max-width: 100%;
+  height: auto;
+}
+
+img.lazy-load {
+  opacity: 0;
+}
+
+img.lazy-loaded {
+  opacity: 1;
+}
+
+/* Aplica blur-up para imagens */
+.image-container {
+  position: relative;
+  overflow: hidden;
+  background-color: transparent;
+  border-radius: 0.75rem; /* 12px */
+  margin: 1.5rem 0;
+}
+
+.image-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  filter: blur(10px);
+  transform: scale(1.05);
+  opacity: 1;
+  transition: opacity 0.3s ease-out;
+  object-fit: contain;
+  border-radius: 0.75rem; /* 12px */
+}
+
+.image-full {
+  opacity: 0;
+  transition: opacity 0.3s ease-in;
+  object-fit: contain;
+  width: 100%;
+  height: auto;
+  border-radius: 0.75rem; /* 12px */
+}
+
+.image-loaded .image-full {
+  opacity: 1;
+}
+
+.image-loaded .image-placeholder {
+  opacity: 0;
+}
+
+/* Otimização para imagens de artigos */
+.article-image {
+  width: 100%;
+  height: auto;
+  border-radius: 0.75rem; /* 12px */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.article-image:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Otimização para imagens de cards */
+.card-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+@media (max-width: 767px) {
+  .card-image {
+    height: 150px;
+  }
+  
+  .article-image {
+    max-height: 300px;
+  }
+}
+
+/* Efeito de skeleton loading para imagens */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.skeleton-image {
+  background: #f6f7f8;
+  background-image: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* Reduz a qualidade das imagens em dispositivos móveis para carregamento mais rápido */
+@media (max-width: 767px) {
+  img {
+    image-rendering: auto;
+  }
+}
