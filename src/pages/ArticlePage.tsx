@@ -81,26 +81,46 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
     imageUrl = 'https://memepmw.online/logo.png';
   }
   
+  // Função para criar um slug a partir do título do artigo
+  const createSlug = (text: string) => {
+    return text
+      .toString()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-') // Substitui espaços por hífens
+      .replace(/[^\w\-]+/g, '') // Remove caracteres não alfanuméricos
+      .replace(/\-\-+/g, '-'); // Remove hífens duplicados
+  };
+  
+  // Cria um slug a partir do título do artigo
+  const articleSlug = createSlug(title);
+  
+  // Obtém a data atual para usar na URL
+  const now = new Date();
+  const dateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  
+  // URL amigável para o artigo
+  const friendlyUrl = `${window.location.origin}/article/${articleSlug}-${dateString}-${article.id}`;
+  
   const shareOnWhatsApp = () => {
-    // Usa a página de compartilhamento estática que contém meta tags OpenGraph
-    // Isso garante que o WhatsApp e outras redes sociais exibam a imagem e o título corretamente
-    
-    // URL da página de compartilhamento estática
-    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}`;
+    // Usa a página de compartilhamento estática com parâmetros para meta tags
+    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
     
     // Abre o WhatsApp com a URL da página de compartilhamento
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   
   const shareOnFacebook = () => {
-    // Usa a página de compartilhamento estática
-    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}`;
+    // Usa a página de compartilhamento estática com parâmetros para meta tags
+    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   
   const shareOnTwitter = () => {
-    // Usa a página de compartilhamento estática
-    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}`;
+    // Usa a página de compartilhamento estática com parâmetros para meta tags
+    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
     window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   

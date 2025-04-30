@@ -5,21 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Compartilhar Artigo | Meme PMW</title>
   
-  <!-- Meta tags dinâmicas que serão substituídas pelo script -->
+  <!-- Meta tags OpenGraph para Facebook, WhatsApp -->
   <meta property="og:title" content="Artigo | Meme PMW" />
   <meta property="og:description" content="Leia este artigo no Meme PMW" />
-  <meta property="og:type" content="article" />
   <meta property="og:image" content="https://memepmw.online/logo.png" />
   <meta property="og:image:secure_url" content="https://memepmw.online/logo.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:site_name" content="Meme PMW" />
+  <meta property="og:type" content="article" />
   <meta property="og:url" content="https://memepmw.online" />
+  <meta property="og:site_name" content="Meme PMW" />
   <meta property="og:locale" content="pt_BR" />
   
   <!-- Meta tags específicas para WhatsApp -->
-  <meta property="og:image:alt" content="Imagem do artigo" />
-
+  <meta property="og:image:alt" content="Artigo | Meme PMW" />
+  
+  <!-- Meta tags Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@memepmw" />
   <meta name="twitter:title" content="Artigo | Meme PMW" />
@@ -97,55 +98,20 @@
       return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
     }
 
-    // Função para buscar dados do artigo da API
-    async function fetchArticle(id) {
-      try {
-        // Usar a API diretamente
-        const apiUrl = 'https://memepmw.online/api';
-        const response = await fetch(`${apiUrl}/articles/${id}`);
-        
-        if (!response.ok) {
-          throw new Error(`Erro ao buscar artigo: ${response.status}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Erro ao buscar artigo:', error);
-        return null;
-      }
-    }
-
-    // Função para processar URL de imagem
-    function processImageUrl(imageUrl) {
-      if (!imageUrl) return 'https://memepmw.online/logo.png';
-      
-      // Corrigir URLs com IP
-      if (imageUrl.includes('167.172.152.174:3001')) {
-        imageUrl = imageUrl.replace('http://167.172.152.174:3001', 'https://memepmw.online');
-      }
-      
-      // Corrigir URLs relativas
-      if (imageUrl.startsWith('/')) {
-        imageUrl = `https://memepmw.online${imageUrl}`;
-      }
-      
-      // Garantir HTTPS
-      if (imageUrl.startsWith('http://')) {
-        imageUrl = imageUrl.replace('http://', 'https://');
-      }
-      
-      return imageUrl;
-    }
-
     // Função para atualizar meta tags
     function updateMetaTags(title, description, image, url) {
+      console.log('Atualizando meta tags:');
+      console.log('Título:', title);
+      console.log('Descrição:', description);
+      console.log('Imagem:', image);
+      console.log('URL:', url);
+      
       // OpenGraph
       document.querySelector('meta[property="og:title"]').setAttribute('content', title);
       document.querySelector('meta[property="og:description"]').setAttribute('content', description);
       document.querySelector('meta[property="og:image"]').setAttribute('content', image);
       document.querySelector('meta[property="og:image:secure_url"]').setAttribute('content', image);
       document.querySelector('meta[property="og:url"]').setAttribute('content', url);
-      document.querySelector('meta[property="og:image:alt"]').setAttribute('content', title);
       
       // Twitter
       document.querySelector('meta[name="twitter:title"]').setAttribute('content', title);
@@ -156,56 +122,81 @@
       document.title = title + ' | Meme PMW';
     }
 
-    // Função principal
-    async function init() {
-      // Obter ID do artigo da URL
-      const id = getUrlParameter('id');
-      
-      if (!id) {
-        document.getElementById('article-title').textContent = 'Artigo não encontrado';
-        document.getElementById('article-summary').textContent = 'O ID do artigo não foi fornecido.';
-        return;
-      }
-      
-      // Buscar dados do artigo
-      const article = await fetchArticle(id);
-      
-      if (!article) {
-        document.getElementById('article-title').textContent = 'Erro ao carregar artigo';
-        document.getElementById('article-summary').textContent = 'Não foi possível carregar os dados do artigo.';
-        return;
-      }
-      
-      // Processar dados
-      const title = article.title || 'Artigo | Meme PMW';
-      const summary = article.summary || 'Leia este artigo no Meme PMW';
-      const imageUrl = processImageUrl(article.featuredImage);
-      const articleUrl = `https://memepmw.online/article/${id}`;
-      
-      // Atualizar elementos da página
+    // Obter parâmetros da URL
+    const id = getUrlParameter('id');
+    const title = getUrlParameter('title');
+    const summary = getUrlParameter('summary');
+    const image = getUrlParameter('image');
+    const url = getUrlParameter('url');
+    
+    // Atualizar elementos da página
+    if (id && title) {
       document.getElementById('article-title').textContent = title;
-      document.getElementById('article-summary').textContent = summary;
-      document.getElementById('article-image').src = imageUrl;
+      document.getElementById('article-summary').textContent = summary || 'Clique para ler o artigo completo.';
+      
+      if (image) {
+        // Corrigir URL da imagem se necessário
+        let imageUrl = image;
+        
+        // Tratamento especial para o caso conhecido de erro na URL
+        if (imageUrl && imageUrl.includes('https%3A%2F%%2Fuploads')) {
+          // Corrige o erro específico na URL
+          imageUrl = 'https://memepmw.online/uploads/images/image-1745882736678-561060873.png';
+        }
+        // Caso contrário, tenta processar normalmente
+        else if (imageUrl) {
+          try {
+            // Tenta decodificar a URL (pode falhar se estiver mal formada)
+            imageUrl = decodeURIComponent(imageUrl);
+            
+            // Extrai o caminho relativo da imagem
+            let relativePath = imageUrl;
+            
+            // Remove domínios conhecidos
+            if (relativePath.includes('memepmw.online')) {
+              relativePath = relativePath.replace(/https?:\/\/memepmw\.online/g, '');
+            } else if (relativePath.includes('167.172.152.174:3001')) {
+              relativePath = relativePath.replace(/http:\/\/167\.172\.152\.174:3001/g, '');
+            }
+            
+            // Garante que o caminho relativo comece com /
+            if (!relativePath.startsWith('/')) {
+              relativePath = '/' + relativePath;
+            }
+            
+            // Constrói a URL absoluta final
+            imageUrl = `https://memepmw.online${relativePath}`;
+          } catch (e) {
+            console.error('Erro ao processar URL da imagem:', e);
+            // Em caso de erro, usa a imagem padrão
+            imageUrl = 'https://memepmw.online/logo.png';
+          }
+        } else {
+          // Imagem padrão se não houver URL
+          imageUrl = 'https://memepmw.online/logo.png';
+        }
+        
+        // Atualiza a imagem na página
+        document.getElementById('article-image').src = imageUrl;
+      }
+      
+      const articleUrl = url || `https://memepmw.online/article/${id}`;
       document.getElementById('article-link').href = articleUrl;
       
       // Atualizar meta tags
-      updateMetaTags(title, summary, imageUrl, articleUrl);
+      updateMetaTags(
+        title, 
+        summary || 'Leia este artigo no Meme PMW', 
+        image || 'https://memepmw.online/logo.png',
+        articleUrl
+      );
       
-      // Iniciar contagem regressiva
-      let countdown = 5;
+      // Atualiza o elemento de contagem, mas sem redirecionamento automático
+      // Isso garante que o WhatsApp tenha tempo suficiente para fazer o scraping das meta tags
       const countdownElement = document.getElementById('countdown');
-      const countdownInterval = setInterval(() => {
-        countdown--;
-        countdownElement.textContent = countdown;
-        if (countdown <= 0) {
-          clearInterval(countdownInterval);
-          window.location.href = articleUrl;
-        }
-      }, 1000);
+      countdownElement.textContent = '0';
+      document.querySelector('.loading').innerHTML = '<a href="' + articleUrl + '" class="btn">Clique aqui para ler o artigo completo</a>';
     }
-
-    // Iniciar quando a página carregar
-    window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
