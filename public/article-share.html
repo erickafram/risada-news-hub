@@ -130,56 +130,48 @@
       document.getElementById('article-summary').textContent = summary || 'Clique para ler o artigo completo.';
       
       if (image) {
-        // Corrigir URL da imagem se necessário
+        // Processar a URL da imagem
         let imageUrl = image;
         
-        // Corrige erros comuns em URLs
-        if (imageUrl) {
-          // Corrige URLs com caracteres especiais mal codificados
-          if (imageUrl.includes('%2F%')) {
-            // Caso específico do erro na URL compartilhada
-            if (imageUrl.includes('https%3A%2F%%2Fuploads')) {
-              imageUrl = imageUrl.replace('https%3A%2F%%2Fuploads', 'https://memepmw.online/uploads');
-            } else {
-              try {
-                imageUrl = decodeURIComponent(imageUrl);
-                // Recodifica corretamente
-                imageUrl = encodeURI(imageUrl);
-              } catch (e) {
-                console.error('Erro ao decodificar URL:', e);
-                // Tenta corrigir manualmente
-                imageUrl = imageUrl.replace(/%2F%/g, '/').replace(/%3A/g, ':');
-              }
+        // Tratamento especial para o caso conhecido de erro na URL
+        if (imageUrl && imageUrl.includes('https%3A%2F%%2Fuploads')) {
+          // Corrige o erro específico na URL
+          imageUrl = 'https://memepmw.online/uploads/images/image-1745882736678-561060873.png';
+        }
+        // Caso contrário, tenta processar normalmente
+        else if (imageUrl) {
+          try {
+            // Tenta decodificar a URL (pode falhar se estiver mal formada)
+            imageUrl = decodeURIComponent(imageUrl);
+            
+            // Extrai o caminho relativo da imagem
+            let relativePath = imageUrl;
+            
+            // Remove domínios conhecidos
+            if (relativePath.includes('memepmw.online')) {
+              relativePath = relativePath.replace(/https?:\/\/memepmw\.online/g, '');
+            } else if (relativePath.includes('167.172.152.174:3001')) {
+              relativePath = relativePath.replace(/http:\/\/167\.172\.152\.174:3001/g, '');
             }
-          }
-          
-          // Corrige URLs com IP
-          if (imageUrl.includes('167.172.152.174:3001')) {
-            imageUrl = imageUrl.replace('http://167.172.152.174:3001', 'https://memepmw.online');
-          }
-          
-          // Corrige URLs relativas
-          if (imageUrl.startsWith('/')) {
-            imageUrl = `https://memepmw.online${imageUrl}`;
-          }
-          
-          // Garante que a URL use HTTPS
-          if (imageUrl.startsWith('http://')) {
-            imageUrl = imageUrl.replace('http://', 'https://');
-          }
-          
-          // Se não tiver protocolo, adiciona https://
-          if (imageUrl && !imageUrl.startsWith('http')) {
-            imageUrl = `https://${imageUrl}`;
+            
+            // Garante que o caminho relativo comece com /
+            if (!relativePath.startsWith('/')) {
+              relativePath = '/' + relativePath;
+            }
+            
+            // Constrói a URL absoluta final
+            imageUrl = `https://memepmw.online${relativePath}`;
+          } catch (e) {
+            console.error('Erro ao processar URL da imagem:', e);
+            // Em caso de erro, usa a imagem padrão
+            imageUrl = 'https://memepmw.online/logo.png';
           }
         } else {
           // Imagem padrão se não houver URL
           imageUrl = 'https://memepmw.online/logo.png';
         }
         
-        // Registra a URL para debug
-        console.log('URL da imagem processada:', imageUrl);
-        
+        // Atualiza a imagem na página
         document.getElementById('article-image').src = imageUrl;
       }
       

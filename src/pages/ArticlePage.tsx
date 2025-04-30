@@ -54,41 +54,49 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
   
   // Garante que a URL da imagem seja absoluta e use HTTPS
   let imageUrl = article.featuredImage || '';
-  // Corrige URLs com IP
-  if (imageUrl.includes('167.172.152.174:3001')) {
-    imageUrl = imageUrl.replace('http://167.172.152.174:3001', 'https://memepmw.online');
-  }
-  // Corrige URLs relativas
-  if (imageUrl.startsWith('/')) {
-    imageUrl = `https://memepmw.online${imageUrl}`;
-  }
-  // Garante que a URL use HTTPS
-  if (imageUrl.startsWith('http://')) {
-    imageUrl = imageUrl.replace('http://', 'https://');
-  }
-  // Se não tiver protocolo, adiciona https://
-  if (imageUrl && !imageUrl.startsWith('http')) {
-    imageUrl = `https://${imageUrl}`;
+  
+  // Sempre usar o domínio principal para as imagens
+  if (imageUrl) {
+    // Extrai o caminho relativo da imagem, independente do formato da URL
+    let relativePath = imageUrl;
+    
+    // Se a URL contiver o IP do servidor
+    if (imageUrl.includes('167.172.152.174:3001')) {
+      relativePath = imageUrl.replace('http://167.172.152.174:3001', '');
+    } 
+    // Se a URL já contiver o domínio principal
+    else if (imageUrl.includes('memepmw.online')) {
+      relativePath = imageUrl.replace(/https?:\/\/memepmw\.online/g, '');
+    }
+    
+    // Garante que o caminho relativo comece com /
+    if (!relativePath.startsWith('/')) {
+      relativePath = '/' + relativePath;
+    }
+    
+    // Constrói a URL absoluta final
+    imageUrl = `https://memepmw.online${relativePath}`;
+  } else {
+    // Imagem padrão se não houver URL
+    imageUrl = 'https://memepmw.online/logo.png';
   }
   
   const shareOnWhatsApp = () => {
-    // Verifica se a URL da imagem tem algum problema de codificação
-    let processedImageUrl = imageUrl;
-    // Se a URL contiver caracteres especiais, decodifica e recodifica corretamente
-    if (processedImageUrl.includes('%')) {
-      try {
-        processedImageUrl = decodeURIComponent(processedImageUrl);
-        // Recodifica corretamente usando encodeURI que preserva caracteres válidos de URL
-        processedImageUrl = encodeURI(processedImageUrl);
-      } catch (e) {
-        console.error('Erro ao processar URL da imagem:', e);
-      }
-    }
+    // URL da imagem já está normalizada e absoluta
     
     // Cria uma URL para a página de compartilhamento com os dados do artigo
-    const sharePageUrl = `${window.location.origin}/article-share.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary)}&image=${processedImageUrl}&url=${encodeURIComponent(shareUrl)}`;
+    const articleId = article.id;
+    const encodedTitle = encodeURIComponent(title);
+    const encodedSummary = encodeURIComponent(summary);
+    const encodedUrl = encodeURIComponent(shareUrl);
     
-    // Compartilha apenas a URL da página de compartilhamento no WhatsApp (sem texto adicional)
+    // Usa encodeURIComponent para a URL da imagem para garantir que seja codificada corretamente
+    const encodedImage = encodeURIComponent(imageUrl);
+    
+    // Constrói a URL da página de compartilhamento
+    const sharePageUrl = `${window.location.origin}/article-share.html?id=${articleId}&title=${encodedTitle}&summary=${encodedSummary}&image=${encodedImage}&url=${encodedUrl}`;
+    
+    // Compartilha apenas a URL da página de compartilhamento no WhatsApp
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   
