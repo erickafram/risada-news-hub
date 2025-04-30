@@ -4,7 +4,9 @@ import Layout from '@/components/layout/Layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle, Loader2, ArrowLeft, ThumbsUp, Angry, Laugh, Frown, Bookmark, BookmarkCheck, Share2, Facebook, Twitter } from 'lucide-react';
+import { Heart, MessageCircle, Loader2, ArrowLeft, ThumbsUp, Angry, Laugh, Frown, Bookmark, BookmarkCheck, Share2 } from 'lucide-react';
+import { FaFacebook, FaTwitter, FaWhatsapp } from 'react-icons/fa';
+import { WhatsappShareButton, FacebookShareButton, TwitterShareButton } from 'react-share';
 import { Badge } from '@/components/ui/badge';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { useToast } from '@/components/ui/use-toast';
@@ -48,81 +50,22 @@ interface CommentType {
 // Componente de botões de compartilhamento
 const ShareButtons = ({ article, className = '' }: { article: Article, className?: string }) => {
   // Usa URL absoluta para garantir que o compartilhamento funcione corretamente
-  const shareUrl = window.location.href;
+  const articleUrl = `https://memepmw.online/article/${article.id}`;
   const title = article.title;
-  const summary = article.summary || '';
   
-  // Garante que a URL da imagem seja absoluta e use HTTPS
-  let imageUrl = article.featuredImage || '';
-  
-  // Sempre usar o domínio principal para as imagens
-  if (imageUrl) {
-    // Extrai o caminho relativo da imagem, independente do formato da URL
-    let relativePath = imageUrl;
-    
-    // Se a URL contiver o IP do servidor
-    if (imageUrl.includes('167.172.152.174:3001')) {
-      relativePath = imageUrl.replace('http://167.172.152.174:3001', '');
-    } 
-    // Se a URL já contiver o domínio principal
-    else if (imageUrl.includes('memepmw.online')) {
-      relativePath = imageUrl.replace(/https?:\/\/memepmw\.online/g, '');
-    }
-    
-    // Garante que o caminho relativo comece com /
-    if (!relativePath.startsWith('/')) {
-      relativePath = '/' + relativePath;
-    }
-    
-    // Constrói a URL absoluta final
-    imageUrl = `https://memepmw.online${relativePath}`;
-  } else {
-    // Imagem padrão se não houver URL
-    imageUrl = 'https://memepmw.online/logo.png';
-  }
-  
-  // Função para criar um slug a partir do título do artigo
-  const createSlug = (text: string) => {
-    return text
-      .toString()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-') // Substitui espaços por hífens
-      .replace(/[^\w\-]+/g, '') // Remove caracteres não alfanuméricos
-      .replace(/\-\-+/g, '-'); // Remove hífens duplicados
-  };
-  
-  // Cria um slug a partir do título do artigo
-  const articleSlug = createSlug(title);
-  
-  // Obtém a data atual para usar na URL
-  const now = new Date();
-  const dateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  
-  // URL amigável para o artigo
-  const friendlyUrl = `${window.location.origin}/article/${articleSlug}-${dateString}-${article.id}`;
+  // Texto para compartilhamento no WhatsApp
+  const shareText = `${title} - Leia mais em: ${articleUrl}`;
   
   const shareOnWhatsApp = () => {
-    // Usa a página PHP que gera meta tags estáticas para o WhatsApp
-    // Usamos o domínio de produção para garantir que o WhatsApp acesse a página correta
-    const previewUrl = `https://memepmw.online/preview.php?id=${article.id}`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(previewUrl)}`, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
   };
   
   const shareOnFacebook = () => {
-    // Usa a página PHP que gera meta tags estáticas para o Facebook
-    // Usamos o domínio de produção para garantir que o Facebook acesse a página correta
-    const previewUrl = `https://memepmw.online/preview.php?id=${article.id}`;
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(previewUrl)}`, '_blank');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`, '_blank');
   };
   
   const shareOnTwitter = () => {
-    // Usa a página PHP que gera meta tags estáticas para o Twitter
-    // Usamos o domínio de produção para garantir que o Twitter acesse a página correta
-    const previewUrl = `https://memepmw.online/preview.php?id=${article.id}`;
-    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(previewUrl)}`, '_blank');
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(articleUrl)}`, '_blank');
   };
   
   return (
@@ -143,7 +86,9 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
         className="bg-[#1877F2] hover:bg-[#166FE5] text-white border-none rounded-md p-2 h-12 w-12 shadow-md"
         onClick={shareOnFacebook}
       >
-        <Facebook size={24} />
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
+          <path d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01Z" />
+        </svg>
       </Button>
       <Button 
         variant="outline" 
@@ -151,7 +96,9 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
         className="bg-[#1DA1F2] hover:bg-[#0c85d0] text-white border-none rounded-md p-2 h-12 w-12 shadow-md"
         onClick={shareOnTwitter}
       >
-        <Twitter size={24} />
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
+          <path d="M22 5.8a8.49 8.49 0 0 1-2.36.64 4.13 4.13 0 0 0 1.81-2.27 8.21 8.21 0 0 1-2.61 1 4.1 4.1 0 0 0-7 3.74 11.64 11.64 0 0 1-8.45-4.29 4.16 4.16 0 0 0-.55 2.07 4.09 4.09 0 0 0 1.82 3.41 4.05 4.05 0 0 1-1.86-.51v.05a4.1 4.1 0 0 0 3.3 4 3.93 3.93 0 0 1-1.1.17 4.9 4.9 0 0 1-.77-.07 4.11 4.11 0 0 0 3.83 2.84A8.22 8.22 0 0 1 3 18.34a7.93 7.93 0 0 1-1-.06 11.57 11.57 0 0 0 6.29 1.85A11.59 11.59 0 0 0 20 8.45v-.53a8.43 8.43 0 0 0 2-2.12Z" />
+        </svg>
       </Button>
     </div>
   );
