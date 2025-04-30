@@ -82,22 +82,14 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
   }
   
   const shareOnWhatsApp = () => {
-    // URL da imagem já está normalizada e absoluta
+    // Usa uma abordagem direta para compartilhar no WhatsApp
+    // Compartilha apenas o link, permitindo que o WhatsApp extraia as meta tags
     
-    // Cria uma URL para a página de compartilhamento com os dados do artigo
-    const articleId = article.id;
-    const encodedTitle = encodeURIComponent(title);
-    const encodedSummary = encodeURIComponent(summary);
-    const encodedUrl = encodeURIComponent(shareUrl);
+    // Usa a URL canônica do artigo (sem parâmetros ou fragmentos)
+    const articleUrl = window.location.origin + window.location.pathname;
     
-    // Usa encodeURIComponent para a URL da imagem para garantir que seja codificada corretamente
-    const encodedImage = encodeURIComponent(imageUrl);
-    
-    // Constrói a URL da página de compartilhamento
-    const sharePageUrl = `${window.location.origin}/article-share.html?id=${articleId}&title=${encodedTitle}&summary=${encodedSummary}&image=${encodedImage}&url=${encodedUrl}`;
-    
-    // Compartilha apenas a URL da página de compartilhamento no WhatsApp
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(sharePageUrl)}`, '_blank');
+    // Abre o WhatsApp com o link do artigo
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(articleUrl)}`, '_blank');
   };
   
   const shareOnFacebook = () => {
@@ -638,32 +630,50 @@ const ArticlePage = () => {
     );
   }
 
+  // Prepara a URL absoluta da imagem para meta tags
+  const getAbsoluteImageUrl = (relativeUrl: string) => {
+    if (!relativeUrl) return 'https://memepmw.online/logo.png';
+    
+    // Se já for uma URL absoluta
+    if (relativeUrl.startsWith('http')) return relativeUrl;
+    
+    // Se for uma URL relativa
+    if (relativeUrl.startsWith('/')) {
+      return `https://memepmw.online${relativeUrl}`;
+    }
+    
+    // Outros casos
+    return `https://memepmw.online/${relativeUrl}`;
+  };
+  
+  // Prepara a URL absoluta do artigo
+  const articleUrl = window.location.href;
+  const articleImageUrl = article?.featuredImage ? getAbsoluteImageUrl(article.featuredImage) : 'https://memepmw.online/logo.png';
+
   return (
     <Layout>
-      {article && (
-        <Helmet>
-          <title>{article.title} | Meme PMW</title>
-          <meta name="description" content={article.summary} />
-          
-          {/* OpenGraph tags para Facebook, WhatsApp e outras plataformas */}
-          <meta property="og:title" content={article.title} />
-          <meta property="og:description" content={article.summary} />
-          <meta property="og:image" content={article.featuredImage} />
-          <meta property="og:url" content={window.location.href} />
-          <meta property="og:type" content="article" />
-          <meta property="og:site_name" content="Meme PMW" />
-          
-          {/* Twitter Card tags */}
-          <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:title" content={article.title} />
-          <meta name="twitter:description" content={article.summary} />
-          <meta name="twitter:image" content={article.featuredImage} />
-          
-          {/* WhatsApp específico */}
-          <meta property="og:image:width" content="1200" />
-          <meta property="og:image:height" content="630" />
-        </Helmet>
-      )}
+      <Helmet>
+        <title>{article?.title ? `${article.title} | Meme PMW` : 'Artigo | Meme PMW'}</title>
+        <meta name="description" content={article?.summary || 'Leia este artigo no Meme PMW'} />
+        
+        {/* Meta tags OpenGraph para compartilhamento */}
+        <meta property="og:title" content={article?.title || 'Artigo | Meme PMW'} />
+        <meta property="og:description" content={article?.summary || 'Leia este artigo no Meme PMW'} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={articleUrl} />
+        <meta property="og:image" content={articleImageUrl} />
+        <meta property="og:image:secure_url" content={articleImageUrl} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:site_name" content="Meme PMW" />
+        
+        {/* Meta tags Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@memepmw" />
+        <meta name="twitter:title" content={article?.title || 'Artigo | Meme PMW'} />
+        <meta name="twitter:description" content={article?.summary || 'Leia este artigo no Meme PMW'} />
+        <meta name="twitter:image" content={articleImageUrl} />
+      </Helmet>
       
       <article className="container mx-auto px-4 py-8 animate-fade-in">
         {/* Botão de voltar ao topo */}
