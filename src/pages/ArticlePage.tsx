@@ -105,23 +105,21 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
   const friendlyUrl = `${window.location.origin}/article/${articleSlug}-${dateString}-${article.id}`;
   
   const shareOnWhatsApp = () => {
-    // Usa a página de compartilhamento estática com parâmetros para meta tags
-    const sharePageUrl = `${window.location.origin}/article-meta.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
-    
-    // Abre o WhatsApp com a URL da página de compartilhamento
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(sharePageUrl)}`, '_blank');
+    // Usa a página PHP que gera meta tags estáticas para o WhatsApp
+    const previewUrl = `${window.location.origin}/preview.php?id=${article.id}`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(previewUrl)}`, '_blank');
   };
   
   const shareOnFacebook = () => {
-    // Usa a página de compartilhamento estática com parâmetros para meta tags
-    const sharePageUrl = `${window.location.origin}/article-meta.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`, '_blank');
+    // Usa a página PHP que gera meta tags estáticas para o Facebook
+    const previewUrl = `${window.location.origin}/preview.php?id=${article.id}`;
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(previewUrl)}`, '_blank');
   };
   
   const shareOnTwitter = () => {
-    // Usa a página de compartilhamento estática com parâmetros para meta tags
-    const sharePageUrl = `${window.location.origin}/article-meta.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
-    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(sharePageUrl)}`, '_blank');
+    // Usa a página PHP que gera meta tags estáticas para o Twitter
+    const previewUrl = `${window.location.origin}/preview.php?id=${article.id}`;
+    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(previewUrl)}`, '_blank');
   };
   
   return (
@@ -677,24 +675,27 @@ const ArticlePage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>{article?.title ? `${article.title} | Meme PMW` : 'Artigo | Meme PMW'}</title>
+        <title>{article?.title} | Meme PMW</title>
         <meta name="description" content={article?.summary || 'Leia este artigo no Meme PMW'} />
-        
-        {/* Meta tags OpenGraph para compartilhamento */}
-        <meta property="og:title" content={article?.title || 'Artigo | Meme PMW'} />
+        <link rel="canonical" href={articleUrl} />
+
+        {/* Meta tags para OpenGraph (Facebook, WhatsApp) */}
+        <meta property="og:title" content={article?.title} />
         <meta property="og:description" content={article?.summary || 'Leia este artigo no Meme PMW'} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={articleUrl} />
         <meta property="og:image" content={articleImageUrl} />
         <meta property="og:image:secure_url" content={articleImageUrl} />
+        <meta property="og:url" content={articleUrl} />
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="Meme PMW" />
+        <meta property="og:locale" content="pt_BR" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:site_name" content="Meme PMW" />
-        
-        {/* Meta tags Twitter Card */}
+        <meta property="og:image:alt" content={article?.title} />
+
+        {/* Meta tags para Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@memepmw" />
-        <meta name="twitter:title" content={article?.title || 'Artigo | Meme PMW'} />
+        <meta name="twitter:title" content={article?.title} />
         <meta name="twitter:description" content={article?.summary || 'Leia este artigo no Meme PMW'} />
         <meta name="twitter:image" content={articleImageUrl} />
       </Helmet>

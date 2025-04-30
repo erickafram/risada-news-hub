@@ -1,0 +1,7 @@
+# Regras de redirecionamento para o Netlify
+# Redireciona URLs amigáveis para a página do artigo
+/article/:slug-:date-:id  /index.html  200
+/article/:id              /index.html  200
+
+# Redireciona todas as outras rotas para o index.html (single-page application)
+/*                        /index.html  200
