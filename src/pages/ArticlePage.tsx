@@ -82,25 +82,25 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
   }
   
   const shareOnWhatsApp = () => {
-    // Usa a rota de compartilhamento que gera meta tags estáticas para o artigo
+    // Usa a página de compartilhamento estática que contém meta tags OpenGraph
     // Isso garante que o WhatsApp e outras redes sociais exibam a imagem e o título corretamente
     
-    // URL da página de compartilhamento (que contém meta tags estáticas)
-    const shareUrl = `${window.location.origin}/share/article/${article.id}`;
+    // URL da página de compartilhamento estática
+    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}`;
     
     // Abre o WhatsApp com a URL da página de compartilhamento
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareUrl)}`, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   
   const shareOnFacebook = () => {
-    // Usa a rota de compartilhamento que gera meta tags estáticas para o artigo
-    const sharePageUrl = `${window.location.origin}/share/article/${article.id}`;
+    // Usa a página de compartilhamento estática
+    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}`;
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   
   const shareOnTwitter = () => {
-    // Usa a rota de compartilhamento que gera meta tags estáticas para o artigo
-    const sharePageUrl = `${window.location.origin}/share/article/${article.id}`;
+    // Usa a página de compartilhamento estática
+    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}`;
     window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   
