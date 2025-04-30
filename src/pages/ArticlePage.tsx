@@ -82,14 +82,16 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
   }
   
   const shareOnWhatsApp = () => {
-    // Usa uma abordagem direta para compartilhar no WhatsApp
-    // Compartilha apenas o link, permitindo que o WhatsApp extraia as meta tags
+    // Compartilha o título e o link do artigo
     
     // Usa a URL canônica do artigo (sem parâmetros ou fragmentos)
     const articleUrl = window.location.origin + window.location.pathname;
     
-    // Abre o WhatsApp com o link do artigo
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(articleUrl)}`, '_blank');
+    // Inclui o título e o link no texto compartilhado
+    const shareText = `${title}\n\n${articleUrl}`;
+    
+    // Abre o WhatsApp com o título e o link do artigo
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
   };
   
   const shareOnFacebook = () => {
