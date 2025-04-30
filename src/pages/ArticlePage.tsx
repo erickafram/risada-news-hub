@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { useToast } from '@/components/ui/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Helmet } from 'react-helmet-async';
+import { getShareFunctions } from '@/utils/metaTagsGenerator';
 
 interface Article {
   id: number;
@@ -45,12 +47,26 @@ interface CommentType {
 
 // Componente de botões de compartilhamento
 const ShareButtons = ({ article, className = '' }: { article: Article, className?: string }) => {
+  // Usa URL absoluta para garantir que o compartilhamento funcione corretamente
   const shareUrl = window.location.href;
   const title = article.title;
   const summary = article.summary || '';
   
+  // Garante que a URL da imagem seja absoluta e use HTTPS
+  let imageUrl = article.featuredImage || '';
+  if (imageUrl.includes('167.172.152.174:3001')) {
+    imageUrl = imageUrl.replace('http://167.172.152.174:3001', 'https://memepmw.online');
+  }
+  if (imageUrl.startsWith('/')) {
+    imageUrl = `https://memepmw.online${imageUrl}`;
+  }
+  
   const shareOnWhatsApp = () => {
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(title + ': ' + shareUrl)}`, '_blank');
+    // Cria uma URL para a página de compartilhamento com os dados do artigo
+    const sharePageUrl = `${window.location.origin}/article-share.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary)}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(shareUrl)}`;
+    
+    // Compartilha a URL da página de compartilhamento no WhatsApp
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`*${title}*\n\n${sharePageUrl}`)}`, '_blank');
   };
   
   const shareOnFacebook = () => {
@@ -593,6 +609,31 @@ const ArticlePage = () => {
 
   return (
     <Layout>
+      {article && (
+        <Helmet>
+          <title>{article.title} | Meme PMW</title>
+          <meta name="description" content={article.summary} />
+          
+          {/* OpenGraph tags para Facebook, WhatsApp e outras plataformas */}
+          <meta property="og:title" content={article.title} />
+          <meta property="og:description" content={article.summary} />
+          <meta property="og:image" content={article.featuredImage} />
+          <meta property="og:url" content={window.location.href} />
+          <meta property="og:type" content="article" />
+          <meta property="og:site_name" content="Meme PMW" />
+          
+          {/* Twitter Card tags */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={article.title} />
+          <meta name="twitter:description" content={article.summary} />
+          <meta name="twitter:image" content={article.featuredImage} />
+          
+          {/* WhatsApp específico */}
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+        </Helmet>
+      )}
+      
       <article className="container mx-auto px-4 py-8 animate-fade-in">
         {/* Botão de voltar ao topo */}
         <div className="fixed bottom-6 right-6 z-10">
@@ -793,21 +834,6 @@ const ArticlePage = () => {
             </div>
 
             {/* Seção "Leia Mais" com artigos populares */}
-            <div className="mt-12 sm:mt-8 border-t border-gray-100 pt-8 sm:pt-4">
-              <h3 className="text-2xl font-bold mb-6 sm:mb-4 text-gray-800 flex items-center justify-center">
-                Leia Mais
-              </h3>
-              
-              {loadingPopular ? (
-                <div className="flex justify-center my-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-                </div>
-              ) : popularArticles.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-3 mb-12 sm:mb-6">
-                  {popularArticles.map((popularArticle) => (
-                    <Link 
-                      to={`/article/${popularArticle.id}`} 
-                      key={popularArticle.id}
                       className="group hover:no-underline"
                     >
                       <div className="overflow-hidden rounded-lg bg-white h-full flex flex-col hover:shadow-md transition-shadow">

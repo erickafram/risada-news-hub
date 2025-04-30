@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compartilhar Artigo | Meme PMW</title>
+  
+  <!-- Meta tags dinâmicas que serão substituídas pelo script -->
+  <meta property="og:title" content="Artigo | Meme PMW" />
+  <meta property="og:description" content="Leia este artigo no Meme PMW" />
+  <meta property="og:type" content="article" />
+  <meta property="og:image" content="https://memepmw.online/logo.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="Meme PMW" />
+  <meta property="og:url" content="https://memepmw.online" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@memepmw" />
+  <meta name="twitter:title" content="Artigo | Meme PMW" />
+  <meta name="twitter:description" content="Leia este artigo no Meme PMW" />
+  <meta name="twitter:image" content="https://memepmw.online/logo.png" />
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f5f5f5;
+      text-align: center;
+    }
+    .container {
+      max-width: 800px;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 15px;
+    }
+    p {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #6d28d9;
+      color: white;
+      text-decoration: none;
+      padding: 12px 25px;
+      border-radius: 5px;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+    .btn:hover {
+      background-color: #5b21b6;
+    }
+    .loading {
+      margin-top: 20px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img id="article-image" src="https://memepmw.online/logo.png" alt="Imagem do artigo">
+    <h1 id="article-title">Carregando artigo...</h1>
+    <p id="article-summary">Aguarde um momento enquanto carregamos o conteúdo do artigo.</p>
+    <a href="#" id="article-link" class="btn">Ler artigo completo</a>
+    <p class="loading">Você será redirecionado em <span id="countdown">5</span> segundos...</p>
+  </div>
+
+  <script>
+    // Função para obter parâmetros da URL
+    function getUrlParameter(name) {
+      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+      var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+      var results = regex.exec(location.search);
+      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+
+    // Função para atualizar meta tags
+    function updateMetaTags(title, description, image, url) {
+      // OpenGraph
+      document.querySelector('meta[property="og:title"]').setAttribute('content', title);
+      document.querySelector('meta[property="og:description"]').setAttribute('content', description);
+      document.querySelector('meta[property="og:image"]').setAttribute('content', image);
+      document.querySelector('meta[property="og:url"]').setAttribute('content', url);
+      
+      // Twitter
+      document.querySelector('meta[name="twitter:title"]').setAttribute('content', title);
+      document.querySelector('meta[name="twitter:description"]').setAttribute('content', description);
+      document.querySelector('meta[name="twitter:image"]').setAttribute('content', image);
+      
+      // Título da página
+      document.title = title + ' | Meme PMW';
+    }
+
+    // Obter parâmetros da URL
+    const id = getUrlParameter('id');
+    const title = getUrlParameter('title');
+    const summary = getUrlParameter('summary');
+    const image = getUrlParameter('image');
+    const url = getUrlParameter('url');
+    
+    // Atualizar elementos da página
+    if (id && title) {
+      document.getElementById('article-title').textContent = title;
+      document.getElementById('article-summary').textContent = summary || 'Clique para ler o artigo completo.';
+      
+      if (image) {
+        // Corrigir URL da imagem se necessário
+        let imageUrl = image;
+        if (imageUrl.includes('167.172.152.174:3001')) {
+          imageUrl = imageUrl.replace('http://167.172.152.174:3001', 'https://memepmw.online');
+        }
+        document.getElementById('article-image').src = imageUrl;
+      }
+      
+      const articleUrl = url || `https://memepmw.online/article/${id}`;
+      document.getElementById('article-link').href = articleUrl;
+      
+      // Atualizar meta tags
+      updateMetaTags(
+        title, 
+        summary || 'Leia este artigo no Meme PMW', 
+        image || 'https://memepmw.online/logo.png',
+        articleUrl
+      );
+      
+      // Iniciar contagem regressiva
+      let countdown = 5;
+      const countdownElement = document.getElementById('countdown');
+      const countdownInterval = setInterval(() => {
+        countdown--;
+        countdownElement.textContent = countdown;
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          window.location.href = articleUrl;
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
