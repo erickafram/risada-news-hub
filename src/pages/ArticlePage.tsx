@@ -106,7 +106,7 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
   
   const shareOnWhatsApp = () => {
     // Usa a página de compartilhamento estática com parâmetros para meta tags
-    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
+    const sharePageUrl = `${window.location.origin}/article-meta.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
     
     // Abre o WhatsApp com a URL da página de compartilhamento
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(sharePageUrl)}`, '_blank');
@@ -114,13 +114,13 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
   
   const shareOnFacebook = () => {
     // Usa a página de compartilhamento estática com parâmetros para meta tags
-    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
+    const sharePageUrl = `${window.location.origin}/article-meta.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   
   const shareOnTwitter = () => {
     // Usa a página de compartilhamento estática com parâmetros para meta tags
-    const sharePageUrl = `${window.location.origin}/share.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
+    const sharePageUrl = `${window.location.origin}/article-meta.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary || '')}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(friendlyUrl)}`;
     window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   

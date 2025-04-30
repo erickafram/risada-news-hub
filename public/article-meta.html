@@ -3,26 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>__ARTICLE_TITLE__ | Meme PMW</title>
-  <meta name="description" content="__ARTICLE_SUMMARY__">
+  <title>Artigo | Meme PMW</title>
+  <meta name="description" content="Leia este artigo no Meme PMW">
   
   <!-- OpenGraph tags para Facebook, WhatsApp e outras plataformas -->
-  <meta property="og:title" content="__ARTICLE_TITLE__">
-  <meta property="og:description" content="__ARTICLE_SUMMARY__">
-  <meta property="og:image" content="__ARTICLE_IMAGE__">
-  <meta property="og:url" content="__ARTICLE_URL__">
+  <meta property="og:title" content="Artigo | Meme PMW">
+  <meta property="og:description" content="Leia este artigo no Meme PMW">
+  <meta property="og:image" content="https://memepmw.online/assets/logo-36miSCX6.png">
+  <meta property="og:image:secure_url" content="https://memepmw.online/assets/logo-36miSCX6.png">
+  <meta property="og:url" content="https://memepmw.online">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="Meme PMW">
+  <meta property="og:locale" content="pt_BR">
   
   <!-- Dimensões específicas para WhatsApp -->
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Artigo | Meme PMW">
   
   <!-- Twitter Card tags -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="__ARTICLE_TITLE__">
-  <meta name="twitter:description" content="__ARTICLE_SUMMARY__">
-  <meta name="twitter:image" content="__ARTICLE_IMAGE__">
+  <meta name="twitter:site" content="@memepmw">
+  <meta name="twitter:title" content="Artigo | Meme PMW">
+  <meta name="twitter:description" content="Leia este artigo no Meme PMW">
+  <meta name="twitter:image" content="https://memepmw.online/assets/logo-36miSCX6.png">
   
   <style>
     body {
@@ -85,10 +89,87 @@
   </div>
   
   <script>
-    // Redireciona para o artigo após 3 segundos
-    setTimeout(function() {
-      window.location.href = "__ARTICLE_URL__";
-    }, 3000);
+    // Função para obter parâmetros da URL
+    function getUrlParameter(name) {
+      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+      var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+      var results = regex.exec(location.search);
+      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+
+    // Função para atualizar meta tags
+    function updateMetaTags(title, description, image, url) {
+      console.log('Atualizando meta tags:');
+      console.log('Título:', title);
+      console.log('Descrição:', description);
+      console.log('Imagem:', image);
+      console.log('URL:', url);
+      
+      // Atualiza título da página
+      document.title = title + ' | Meme PMW';
+      
+      // Atualiza meta tags
+      document.querySelector('meta[name="description"]').setAttribute('content', description);
+      
+      // OpenGraph
+      document.querySelector('meta[property="og:title"]').setAttribute('content', title);
+      document.querySelector('meta[property="og:description"]').setAttribute('content', description);
+      document.querySelector('meta[property="og:image"]').setAttribute('content', image);
+      document.querySelector('meta[property="og:image:secure_url"]').setAttribute('content', image);
+      document.querySelector('meta[property="og:url"]').setAttribute('content', url);
+      document.querySelector('meta[property="og:image:alt"]').setAttribute('content', title);
+      
+      // Twitter
+      document.querySelector('meta[name="twitter:title"]').setAttribute('content', title);
+      document.querySelector('meta[name="twitter:description"]').setAttribute('content', description);
+      document.querySelector('meta[name="twitter:image"]').setAttribute('content', image);
+      
+      // Atualiza elementos da página
+      document.querySelector('.article-image').src = image;
+      document.querySelector('.article-image').alt = title;
+      document.querySelector('h1').textContent = title;
+      document.querySelector('p:not(.redirect)').textContent = description;
+      document.querySelector('.button').href = url;
+    }
+
+    // Obter parâmetros da URL
+    const id = getUrlParameter('id');
+    const title = getUrlParameter('title');
+    const summary = getUrlParameter('summary') || 'Leia este artigo no Meme PMW';
+    let image = getUrlParameter('image');
+    const url = getUrlParameter('url');
+    
+    // Processar a URL da imagem
+    if (image) {
+      // Garantir que a URL da imagem seja absoluta e use HTTPS
+      if (image.includes('167.172.152.174:3001')) {
+        image = image.replace('http://167.172.152.174:3001', 'https://memepmw.online');
+      }
+      if (image.startsWith('/')) {
+        image = `https://memepmw.online${image}`;
+      }
+      if (image.startsWith('http://')) {
+        image = image.replace('http://', 'https://');
+      }
+    } else {
+      // Imagem padrão se não houver URL
+      image = 'https://memepmw.online/assets/logo-36miSCX6.png';
+    }
+    
+    // Se todos os parâmetros estiverem presentes, atualiza as meta tags
+    if (title && url) {
+      updateMetaTags(
+        title,
+        summary,
+        image,
+        url
+      );
+      
+      // Redireciona para o artigo após 3 segundos
+      setTimeout(function() {
+        window.location.href = url;
+      }, 3000);
+    }
   </script>
 </body>
 </html>
