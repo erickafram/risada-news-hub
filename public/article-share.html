@@ -132,22 +132,54 @@
       if (image) {
         // Corrigir URL da imagem se necessário
         let imageUrl = image;
-        // Corrige URLs com IP
-        if (imageUrl.includes('167.172.152.174:3001')) {
-          imageUrl = imageUrl.replace('http://167.172.152.174:3001', 'https://memepmw.online');
+        
+        // Corrige erros comuns em URLs
+        if (imageUrl) {
+          // Corrige URLs com caracteres especiais mal codificados
+          if (imageUrl.includes('%2F%')) {
+            // Caso específico do erro na URL compartilhada
+            if (imageUrl.includes('https%3A%2F%%2Fuploads')) {
+              imageUrl = imageUrl.replace('https%3A%2F%%2Fuploads', 'https://memepmw.online/uploads');
+            } else {
+              try {
+                imageUrl = decodeURIComponent(imageUrl);
+                // Recodifica corretamente
+                imageUrl = encodeURI(imageUrl);
+              } catch (e) {
+                console.error('Erro ao decodificar URL:', e);
+                // Tenta corrigir manualmente
+                imageUrl = imageUrl.replace(/%2F%/g, '/').replace(/%3A/g, ':');
+              }
+            }
+          }
+          
+          // Corrige URLs com IP
+          if (imageUrl.includes('167.172.152.174:3001')) {
+            imageUrl = imageUrl.replace('http://167.172.152.174:3001', 'https://memepmw.online');
+          }
+          
+          // Corrige URLs relativas
+          if (imageUrl.startsWith('/')) {
+            imageUrl = `https://memepmw.online${imageUrl}`;
+          }
+          
+          // Garante que a URL use HTTPS
+          if (imageUrl.startsWith('http://')) {
+            imageUrl = imageUrl.replace('http://', 'https://');
+          }
+          
+          // Se não tiver protocolo, adiciona https://
+          if (imageUrl && !imageUrl.startsWith('http')) {
+            imageUrl = `https://${imageUrl}`;
+          }
+        } else {
+          // Imagem padrão se não houver URL
+          imageUrl = 'https://memepmw.online/logo.png';
         }
-        // Corrige URLs relativas
-        if (imageUrl.startsWith('/')) {
-          imageUrl = `https://memepmw.online${imageUrl}`;
-        }
-        // Garante que a URL use HTTPS
-        if (imageUrl.startsWith('http://')) {
-          imageUrl = imageUrl.replace('http://', 'https://');
-        }
-        // Se não tiver protocolo, adiciona https://
-        if (imageUrl && !imageUrl.startsWith('http')) {
-          imageUrl = `https://${imageUrl}`;
-        }
+        
+        // Registra a URL para debug
+        console.log('URL da imagem processada:', imageUrl);
+        
         document.getElementById('article-image').src = imageUrl;
       }
       

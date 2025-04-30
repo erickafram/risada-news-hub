@@ -72,11 +72,24 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
   }
   
   const shareOnWhatsApp = () => {
-    // Cria uma URL para a página de compartilhamento com os dados do artigo
-    const sharePageUrl = `${window.location.origin}/article-share.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary)}&image=${encodeURIComponent(imageUrl)}&url=${encodeURIComponent(shareUrl)}`;
+    // Verifica se a URL da imagem tem algum problema de codificação
+    let processedImageUrl = imageUrl;
+    // Se a URL contiver caracteres especiais, decodifica e recodifica corretamente
+    if (processedImageUrl.includes('%')) {
+      try {
+        processedImageUrl = decodeURIComponent(processedImageUrl);
+        // Recodifica corretamente usando encodeURI que preserva caracteres válidos de URL
+        processedImageUrl = encodeURI(processedImageUrl);
+      } catch (e) {
+        console.error('Erro ao processar URL da imagem:', e);
+      }
+    }
     
-    // Compartilha a URL da página de compartilhamento no WhatsApp
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`*${title}*\n\n${sharePageUrl}`)}`, '_blank');
+    // Cria uma URL para a página de compartilhamento com os dados do artigo
+    const sharePageUrl = `${window.location.origin}/article-share.html?id=${article.id}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary)}&image=${processedImageUrl}&url=${encodeURIComponent(shareUrl)}`;
+    
+    // Compartilha apenas a URL da página de compartilhamento no WhatsApp (sem texto adicional)
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   
   const shareOnFacebook = () => {
