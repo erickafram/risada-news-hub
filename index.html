@@ -67,6 +67,36 @@
           return url;
         }
         
+        // Função específica para corrigir URLs de imagens no conteúdo do artigo
+        function fixArticleImages() {
+          // Procura por conteúdo de artigo
+          const articleContent = document.querySelector('.article-content');
+          if (articleContent) {
+            console.log('[Article Fix] Corrigindo imagens no conteúdo do artigo');
+            
+            // Corrige todas as imagens dentro do conteúdo do artigo
+            const images = articleContent.querySelectorAll('img');
+            images.forEach(function(img) {
+              if (img.src && img.src.includes('167.172.152.174:3001')) {
+                const fixedSrc = img.src.replace('http://167.172.152.174:3001', 'https://memepmw.online');
+                console.log('[Article Fix] Corrigindo imagem de ' + img.src + ' para ' + fixedSrc);
+                img.src = fixedSrc;
+              }
+            });
+            
+            // Corrige o HTML diretamente para pegar qualquer imagem que possa estar em um innerHTML
+            const originalHTML = articleContent.innerHTML;
+            const newHTML = originalHTML.replace(/http:\/\/167\.172\.152\.174:3001/g, 'https://memepmw.online');
+            if (originalHTML !== newHTML) {
+              console.log('[Article Fix] Corrigindo HTML do artigo');
+              articleContent.innerHTML = newHTML;
+            }
+          }
+        }
+        
+        // Executa a correção de imagens do artigo periodicamente
+        setInterval(fixArticleImages, 1000);
+        
         // Verifica se estamos em ambiente de produção
         const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
         
@@ -105,35 +135,46 @@
             });
           }, 1000);
           
-          // Observa novas imagens sendo adicionadas ao DOM
-          const observer = new MutationObserver(mutations => {
-            mutations.forEach(mutation => {
-              if (mutation.addedNodes) {
-                mutation.addedNodes.forEach(node => {
-                  if (node.tagName === 'IMG' && node.src) {
-                    const originalSrc = node.src;
-                    const fixedSrc = fixUrl(originalSrc);
-                    if (fixedSrc !== originalSrc) {
-                      console.log(`[Image Fix] Corrigindo nova imagem de ${originalSrc} para ${fixedSrc}`);
-                      node.src = fixedSrc;
-                    }
-                  } else if (node.querySelectorAll) {
-                    node.querySelectorAll('img').forEach(img => {
-                      if (img.src) {
-                        const originalSrc = img.src;
-                        const fixedSrc = fixUrl(originalSrc);
-                        if (fixedSrc !== originalSrc) {
-                          console.log(`[Image Fix] Corrigindo imagem dentro de novo elemento de ${originalSrc} para ${fixedSrc}`);
-                          img.src = fixedSrc;
-                        }
+          // Monitorar novas imagens adicionadas ao DOM
+          const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+              mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1) { // Element node
+                  // Corrigir atributos src e data-src em imagens
+                  const images = node.querySelectorAll('img');
+                  images.forEach(function(img) {
+                    if (img.getAttribute('src')) {
+                      const originalSrc = img.getAttribute('src');
+                      const newSrc = fixUrl(originalSrc);
+                      if (originalSrc !== newSrc) {
+                        console.log('[Attribute Fix] Corrigindo atributo src de ' + originalSrc + ' para ' + newSrc);
+                        img.setAttribute('src', newSrc);
                       }
-                    });
+                    }
+                    
+                    if (img.getAttribute('data-src')) {
+                      const originalDataSrc = img.getAttribute('data-src');
+                      const newDataSrc = fixUrl(originalDataSrc);
+                      if (originalDataSrc !== newDataSrc) {
+                        console.log('[Attribute Fix] Corrigindo atributo data-src de ' + originalDataSrc + ' para ' + newDataSrc);
+                        img.setAttribute('data-src', newDataSrc);
+                      }
+                    }
+                  });
+                  
+                  // Verificar se o elemento tem imagens dentro do HTML
+                  if (node.innerHTML && node.innerHTML.includes('<img')) {
+                    const originalHTML = node.innerHTML;
+                    const newHTML = fixUrl(originalHTML);
+                    if (originalHTML !== newHTML) {
+                      console.log('[Image Fix] Corrigindo imagem dentro de novo elemento de ' + originalHTML.substring(0, 100) + '... para ' + newHTML.substring(0, 100) + '...');
+                      node.innerHTML = newHTML;
+                    }
                   }
-                });
-              }
+                }
+              });
             });
           });
-          
           observer.observe(document.body, { childList: true, subtree: true });
           
           console.log('[API Redirect] Interceptação de API e correção de imagens ativadas para ambiente de produção');

@@ -39,7 +39,7 @@ img.lazy-loaded {
 }
 
 .image-full {
-  opacity: 0;
+  opacity: 1; /* Alterado de 0 para 1 para garantir que as imagens sejam visíveis */
   transition: opacity 0.3s ease-in;
   object-fit: contain;
   width: 100%;
