@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Helmet } from 'react-helmet-async';
 import { getShareFunctions } from '@/utils/metaTagsGenerator';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 interface Article {
   id: number;
@@ -49,12 +50,17 @@ interface CommentType {
 
 // Componente de botões de compartilhamento
 const ShareButtons = ({ article, className = '' }: { article: Article, className?: string }) => {
+  // Busca as configurações do site
+  const { settings, loading } = useSiteSettings();
+  
   // Usa URL absoluta para garantir que o compartilhamento funcione corretamente
-  const articleUrl = `https://memepmw.online/article/${article.id}`;
+  const siteUrl = settings?.siteUrl || 'https://memepmw.online';
+  const siteName = settings?.siteTitle || 'Meme PMW';
+  const articleUrl = `${siteUrl}/article/${article.id}`;
   const title = article.title;
   
   // Texto para compartilhamento no WhatsApp
-  const shareText = `${title} - Leia mais em: ${articleUrl}`;
+  const shareText = `${title} - Leia mais em ${siteName}: ${articleUrl}`;
   
   const shareOnWhatsApp = () => {
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
@@ -177,10 +183,18 @@ const ArticlePage = () => {
     fetchPopularArticles();
   }, [id]);
 
-  // Buscar o artigo e as reações
+  // Busca as configurações do site
+  const { settings: siteSettings } = useSiteSettings();
+  const siteName = siteSettings?.siteTitle || 'Meme PMW';
+
+  // Efeito para buscar o artigo quando o ID mudar
   useEffect(() => {
+    if (!id) return;
+    
     const fetchArticle = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
         const response = await fetch(`${apiUrl}/api/articles/${id}`);
@@ -192,22 +206,17 @@ const ArticlePage = () => {
         const data = await response.json();
         setArticle(data);
         
-        // Buscar contagem real de reações
-        await fetchReactionCounts();
-        
-        // Buscar comentários do artigo
-        await fetchComments();
+        // Registrar visualização do artigo
+        await fetch(`${apiUrl}/api/articles/${id}/view`, { method: 'POST' });
       } catch (error) {
         console.error('Erro ao buscar artigo:', error);
-        setError(error instanceof Error ? error.message : 'Erro ao buscar artigo');
+        setError(error instanceof Error ? error.message : 'Erro desconhecido');
       } finally {
         setLoading(false);
       }
     };
     
-    if (id) {
-      fetchArticle();
-    }
+    fetchArticle();
   }, [id]);
 
   // Buscar a reação do usuário quando autenticado
@@ -625,18 +634,18 @@ const ArticlePage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>{article?.title} | Meme PMW</title>
-        <meta name="description" content={article?.summary || 'Leia este artigo no Meme PMW'} />
+        <title>{article?.title} | {siteName}</title>
+        <meta name="description" content={article?.summary || `Leia este artigo no ${siteName}`} />
         <link rel="canonical" href={articleUrl} />
 
         {/* Meta tags para OpenGraph (Facebook, WhatsApp) */}
         <meta property="og:title" content={article?.title} />
-        <meta property="og:description" content={article?.summary || 'Leia este artigo no Meme PMW'} />
+        <meta property="og:description" content={article?.summary || `Leia este artigo no ${siteName}`} />
         <meta property="og:image" content={articleImageUrl} />
         <meta property="og:image:secure_url" content={articleImageUrl} />
         <meta property="og:url" content={articleUrl} />
         <meta property="og:type" content="article" />
-        <meta property="og:site_name" content="Meme PMW" />
+        <meta property="og:site_name" content={siteName} />
         <meta property="og:locale" content="pt_BR" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
@@ -644,9 +653,9 @@ const ArticlePage = () => {
 
         {/* Meta tags para Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="@memepmw" />
+        <meta name="twitter:site" content={`@${siteName.toLowerCase().replace(/\s+/g, '')}`} />
         <meta name="twitter:title" content={article?.title} />
-        <meta name="twitter:description" content={article?.summary || 'Leia este artigo no Meme PMW'} />
+        <meta name="twitter:description" content={article?.summary || `Leia este artigo no ${siteName}`} />
         <meta name="twitter:image" content={articleImageUrl} />
       </Helmet>
       
