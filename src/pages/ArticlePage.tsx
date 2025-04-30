@@ -54,11 +54,21 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
   
   // Garante que a URL da imagem seja absoluta e use HTTPS
   let imageUrl = article.featuredImage || '';
+  // Corrige URLs com IP
   if (imageUrl.includes('167.172.152.174:3001')) {
     imageUrl = imageUrl.replace('http://167.172.152.174:3001', 'https://memepmw.online');
   }
+  // Corrige URLs relativas
   if (imageUrl.startsWith('/')) {
     imageUrl = `https://memepmw.online${imageUrl}`;
+  }
+  // Garante que a URL use HTTPS
+  if (imageUrl.startsWith('http://')) {
+    imageUrl = imageUrl.replace('http://', 'https://');
+  }
+  // Se não tiver protocolo, adiciona https://
+  if (imageUrl && !imageUrl.startsWith('http')) {
+    imageUrl = `https://${imageUrl}`;
   }
   
   const shareOnWhatsApp = () => {
@@ -834,6 +844,21 @@ const ArticlePage = () => {
             </div>
 
             {/* Seção "Leia Mais" com artigos populares */}
+            <div className="mt-12 sm:mt-8 border-t border-gray-100 pt-8 sm:pt-4">
+              <h3 className="text-2xl font-bold mb-6 sm:mb-4 text-gray-800 flex items-center justify-center">
+                Leia Mais
+              </h3>
+              
+              {loadingPopular ? (
+                <div className="flex justify-center my-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                </div>
+              ) : popularArticles.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-3 mb-12 sm:mb-6">
+                  {popularArticles.map((popularArticle) => (
+                    <Link 
+                      to={`/article/${popularArticle.id}`} 
+                      key={popularArticle.id}
                       className="group hover:no-underline"
                     >
                       <div className="overflow-hidden rounded-lg bg-white h-full flex flex-col hover:shadow-md transition-shadow">

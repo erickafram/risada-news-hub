@@ -14,6 +14,10 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:site_name" content="Meme PMW" />
   <meta property="og:url" content="https://memepmw.online" />
+  
+  <!-- Meta tags específicas para WhatsApp -->
+  <meta property="og:image:secure_url" content="https://memepmw.online/logo.png" />
+  <meta property="og:image:alt" content="Imagem do artigo" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@memepmw" />
@@ -100,6 +104,10 @@
       document.querySelector('meta[property="og:image"]').setAttribute('content', image);
       document.querySelector('meta[property="og:url"]').setAttribute('content', url);
       
+      // Meta tags específicas para WhatsApp
+      document.querySelector('meta[property="og:image:secure_url"]').setAttribute('content', image);
+      document.querySelector('meta[property="og:image:alt"]').setAttribute('content', title);
+      
       // Twitter
       document.querySelector('meta[name="twitter:title"]').setAttribute('content', title);
       document.querySelector('meta[name="twitter:description"]').setAttribute('content', description);
@@ -124,8 +132,21 @@
       if (image) {
         // Corrigir URL da imagem se necessário
         let imageUrl = image;
+        // Corrige URLs com IP
         if (imageUrl.includes('167.172.152.174:3001')) {
           imageUrl = imageUrl.replace('http://167.172.152.174:3001', 'https://memepmw.online');
+        }
+        // Corrige URLs relativas
+        if (imageUrl.startsWith('/')) {
+          imageUrl = `https://memepmw.online${imageUrl}`;
+        }
+        // Garante que a URL use HTTPS
+        if (imageUrl.startsWith('http://')) {
+          imageUrl = imageUrl.replace('http://', 'https://');
+        }
+        // Se não tiver protocolo, adiciona https://
+        if (imageUrl && !imageUrl.startsWith('http')) {
+          imageUrl = `https://${imageUrl}`;
         }
         document.getElementById('article-image').src = imageUrl;
       }
