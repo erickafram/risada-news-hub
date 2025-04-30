@@ -81,56 +81,27 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
     imageUrl = 'https://memepmw.online/logo.png';
   }
   
-  const shareOnWhatsApp = async () => {
-    // Usa a URL canônica do artigo (sem parâmetros ou fragmentos)
-    const articleUrl = window.location.origin + window.location.pathname;
+  const shareOnWhatsApp = () => {
+    // Usa a rota de compartilhamento que gera meta tags estáticas para o artigo
+    // Isso garante que o WhatsApp e outras redes sociais exibam a imagem e o título corretamente
     
-    // Verifica se a função de geração de imagem está disponível
-    if (typeof (window as any).generateShareImage === 'function') {
-      try {
-        // Feedback para o usuário (usando o useToast já importado)
-        // Removemos o toast para evitar erros, já que não está sendo usado corretamente
-        
-        // Gera a imagem de compartilhamento
-        const shareImageUrl = await (window as any).generateShareImage(title, imageUrl);
-        
-        // Cria um elemento <a> para download da imagem
-        const downloadLink = document.createElement('a');
-        downloadLink.href = shareImageUrl;
-        downloadLink.download = 'artigo-meme-pmw.jpg';
-        document.body.appendChild(downloadLink);
-        
-        // Faz o download da imagem
-        downloadLink.click();
-        
-        // Remove o elemento após o download
-        setTimeout(() => {
-          document.body.removeChild(downloadLink);
-        }, 100);
-        
-        // Compartilha o título e o link no WhatsApp
-        const shareText = `${title}\n\n${articleUrl}`;
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
-      } catch (error) {
-        console.error('Erro ao gerar imagem de compartilhamento:', error);
-        
-        // Fallback: compartilha apenas o texto e o link
-        const shareText = `${title}\n\n${articleUrl}`;
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
-      }
-    } else {
-      // Se o gerador de imagens não estiver disponível, compartilha apenas o texto e o link
-      const shareText = `${title}\n\n${articleUrl}`;
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
-    }
+    // URL da página de compartilhamento (que contém meta tags estáticas)
+    const shareUrl = `${window.location.origin}/share/article/${article.id}`;
+    
+    // Abre o WhatsApp com a URL da página de compartilhamento
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareUrl)}`, '_blank');
   };
   
   const shareOnFacebook = () => {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(title)}`, '_blank');
+    // Usa a rota de compartilhamento que gera meta tags estáticas para o artigo
+    const sharePageUrl = `${window.location.origin}/share/article/${article.id}`;
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   
   const shareOnTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`, '_blank');
+    // Usa a rota de compartilhamento que gera meta tags estáticas para o artigo
+    const sharePageUrl = `${window.location.origin}/share/article/${article.id}`;
+    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(sharePageUrl)}`, '_blank');
   };
   
   return (
