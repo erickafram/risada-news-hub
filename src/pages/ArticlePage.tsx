@@ -81,17 +81,48 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
     imageUrl = 'https://memepmw.online/logo.png';
   }
   
-  const shareOnWhatsApp = () => {
-    // Compartilha o título e o link do artigo
-    
+  const shareOnWhatsApp = async () => {
     // Usa a URL canônica do artigo (sem parâmetros ou fragmentos)
     const articleUrl = window.location.origin + window.location.pathname;
     
-    // Inclui o título e o link no texto compartilhado
-    const shareText = `${title}\n\n${articleUrl}`;
-    
-    // Abre o WhatsApp com o título e o link do artigo
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+    // Verifica se a função de geração de imagem está disponível
+    if (typeof (window as any).generateShareImage === 'function') {
+      try {
+        // Feedback para o usuário (usando o useToast já importado)
+        // Removemos o toast para evitar erros, já que não está sendo usado corretamente
+        
+        // Gera a imagem de compartilhamento
+        const shareImageUrl = await (window as any).generateShareImage(title, imageUrl);
+        
+        // Cria um elemento <a> para download da imagem
+        const downloadLink = document.createElement('a');
+        downloadLink.href = shareImageUrl;
+        downloadLink.download = 'artigo-meme-pmw.jpg';
+        document.body.appendChild(downloadLink);
+        
+        // Faz o download da imagem
+        downloadLink.click();
+        
+        // Remove o elemento após o download
+        setTimeout(() => {
+          document.body.removeChild(downloadLink);
+        }, 100);
+        
+        // Compartilha o título e o link no WhatsApp
+        const shareText = `${title}\n\n${articleUrl}`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+      } catch (error) {
+        console.error('Erro ao gerar imagem de compartilhamento:', error);
+        
+        // Fallback: compartilha apenas o texto e o link
+        const shareText = `${title}\n\n${articleUrl}`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+      }
+    } else {
+      // Se o gerador de imagens não estiver disponível, compartilha apenas o texto e o link
+      const shareText = `${title}\n\n${articleUrl}`;
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+    }
   };
   
   const shareOnFacebook = () => {
