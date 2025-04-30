@@ -1,28 +1,61 @@
 <?php
+// Configurações e funções de debug
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+function debug_log($message) {
+    file_put_contents('debug_share.log', date('Y-m-d H:i:s') . " - {$message}\n", FILE_APPEND);
+}
+
+debug_log("Iniciando preview.php");
+
 // Obter o ID do artigo da URL
 $id = isset($_GET['id']) ? $_GET['id'] : '';
 
 if (empty($id)) {
+    debug_log("ID não fornecido, redirecionando para home");
     header('Location: /');
     exit;
 }
 
+debug_log("Buscando artigo com ID: {$id}");
+
 // Buscar dados do artigo na API
-$apiUrl = "http://167.172.152.174:3001/api/articles/{$id}";
-$response = file_get_contents($apiUrl);
+$apiUrl = "https://memepmw.online/api/articles/{$id}";
+$context = stream_context_create([
+    'http' => [
+        'timeout' => 30,
+        'ignore_errors' => true
+    ]
+]);
+
+$response = file_get_contents($apiUrl, false, $context);
+debug_log("Resposta da API: " . substr($response, 0, 200) . "...");
+
 $article = json_decode($response, true);
 
 if (!$article) {
-    header('Location: /');
-    exit;
+    debug_log("Artigo não encontrado ou erro na API");
+    // Usar valores padrão
+    $article = [
+        'title' => 'Artigo | Meme PMW',
+        'summary' => 'Leia este artigo no Meme PMW',
+        'featured_image' => 'https://memepmw.online/assets/logo-36miSCX6.png',
+        'createdAt' => date('Y-m-d H:i:s')
+    ];
 }
 
 // Preparar dados para as meta tags
 $title = htmlspecialchars($article['title'] ?? 'Artigo | Meme PMW');
 $description = htmlspecialchars($article['summary'] ?? 'Leia este artigo no Meme PMW');
 
+debug_log("Título do artigo: {$title}");
+debug_log("Descrição do artigo: {$description}");
+
 // Garantir que a URL da imagem seja absoluta
 $imageUrl = $article['featured_image'] ?? 'https://memepmw.online/assets/logo-36miSCX6.png';
+debug_log("URL da imagem original: {$imageUrl}");
+
 if (strpos($imageUrl, 'http') !== 0) {
     if (strpos($imageUrl, '/') === 0) {
         $imageUrl = "https://memepmw.online{$imageUrl}";
@@ -32,6 +65,15 @@ if (strpos($imageUrl, 'http') !== 0) {
 }
 if (strpos($imageUrl, '167.172.152.174:3001') !== false) {
     $imageUrl = str_replace('http://167.172.152.174:3001', 'https://memepmw.online', $imageUrl);
+}
+
+debug_log("URL da imagem corrigida: {$imageUrl}");
+
+// Verificar se a imagem existe
+$headers = @get_headers($imageUrl);
+if (!$headers || strpos($headers[0], '200') === false) {
+    debug_log("Imagem não encontrada, usando imagem padrão");
+    $imageUrl = 'https://memepmw.online/assets/logo-36miSCX6.png';
 }
 
 // Criar slug para URL amigável
@@ -52,7 +94,7 @@ $slug = createSlug($title);
 $articleUrl = "https://memepmw.online/article/{$slug}-{$formattedDate}-{$id}";
 ?>
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" prefix="og: http://ogp.me/ns#">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -71,6 +113,10 @@ $articleUrl = "https://memepmw.online/article/{$slug}-{$formattedDate}-{$id}";
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="<?php echo $title; ?>">
+    
+    <!-- Meta tags específicas para WhatsApp -->
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:determiner" content="the">
     
     <!-- Twitter Card tags -->
     <meta name="twitter:card" content="summary_large_image">
@@ -135,10 +181,11 @@ $articleUrl = "https://memepmw.online/article/{$slug}-{$formattedDate}-{$id}";
     </div>
     
     <script>
-        // Redirecionar após 2 segundos
-        setTimeout(function() {
-            window.location.href = "<?php echo $articleUrl; ?>";
-        }, 2000);
+        // Não redirecionamos automaticamente para dar tempo ao WhatsApp de fazer o scraping
+        // O usuário pode clicar no botão para ler o artigo completo
+        console.log('Preview carregado com sucesso');
+        console.log('URL do artigo: <?php echo $articleUrl; ?>');
+        console.log('Imagem: <?php echo $imageUrl; ?>');
     </script>
 </body>
 </html>

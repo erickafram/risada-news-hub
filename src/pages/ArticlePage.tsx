@@ -106,19 +106,22 @@ const ShareButtons = ({ article, className = '' }: { article: Article, className
   
   const shareOnWhatsApp = () => {
     // Usa a página PHP que gera meta tags estáticas para o WhatsApp
-    const previewUrl = `${window.location.origin}/preview.php?id=${article.id}`;
+    // Usamos o domínio de produção para garantir que o WhatsApp acesse a página correta
+    const previewUrl = `https://memepmw.online/preview.php?id=${article.id}`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(previewUrl)}`, '_blank');
   };
   
   const shareOnFacebook = () => {
     // Usa a página PHP que gera meta tags estáticas para o Facebook
-    const previewUrl = `${window.location.origin}/preview.php?id=${article.id}`;
+    // Usamos o domínio de produção para garantir que o Facebook acesse a página correta
+    const previewUrl = `https://memepmw.online/preview.php?id=${article.id}`;
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(previewUrl)}`, '_blank');
   };
   
   const shareOnTwitter = () => {
     // Usa a página PHP que gera meta tags estáticas para o Twitter
-    const previewUrl = `${window.location.origin}/preview.php?id=${article.id}`;
+    // Usamos o domínio de produção para garantir que o Twitter acesse a página correta
+    const previewUrl = `https://memepmw.online/preview.php?id=${article.id}`;
     window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(previewUrl)}`, '_blank');
   };
   
