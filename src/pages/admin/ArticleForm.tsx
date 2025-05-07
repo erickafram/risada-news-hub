@@ -364,139 +364,159 @@ const ArticleForm = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Título</Label>
-              <Input
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="Título do artigo"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="summary">Resumo</Label>
-              <Textarea
-                id="summary"
-                name="summary"
-                value={formData.summary}
-                onChange={handleChange}
-                placeholder="Resumo do artigo"
-                rows={2}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="content">Conteúdo</Label>
-              <div className="min-h-[200px] border rounded-md">
-                <ReactQuill
-                  id="content"
-                  value={formData.content}
-                  onChange={(value) => setFormData(prev => ({ ...prev, content: value }))}
-                  placeholder="Conteúdo do artigo"
-                  theme="snow"
-                  modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      [{ 'indent': '-1'}, { 'indent': '+1' }],
-                      [{ 'align': [] }],
-                      ['link', 'image'],
-                      ['clean']
-                    ]
-                  }}
-                  formats={[
-                    'header',
-                    'bold', 'italic', 'underline', 'strike',
-                    'list', 'bullet', 'indent',
-                    'link', 'image', 'align'
-                  ]}
-                  className="h-[300px] mb-12"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="categoryId">Categoria</Label>
-              <Select 
-                value={formData.categoryId} 
-                onValueChange={handleSelectChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(category => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="featuredImage">Imagem Destacada</Label>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="featuredImage"
-                      name="featuredImage"
-                      value={formData.featuredImage}
-                      onChange={handleChange}
-                      placeholder="URL da imagem ou faça upload"
-                      className="flex-1"
-                    />
-                    <input 
-                      type="file" 
-                      ref={fileInputRef}
-                      className="hidden" 
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                    />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadState.isUploading}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload
-                    </Button>
-                  </div>
-                  
-                  {uploadState.isUploading && (
-                    <div className="mt-2">
-                      <Progress value={uploadState.progress} className="h-2" />
-                      <p className="text-xs text-gray-500 mt-1">Enviando imagem...</p>
-                    </div>
-                  )}
-                  
-                  {uploadState.error && (
-                    <p className="text-xs text-red-500 mt-1">{uploadState.error}</p>
-                  )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Coluna Esquerda - Informações Principais */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Título</Label>
+                  <Input
+                    id="title"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    placeholder="Título do artigo"
+                    required
+                  />
                 </div>
                 
-                <div className="flex items-center justify-center border rounded-md p-4 h-40">
-                  {formData.featuredImage ? (
-                    <img 
-                      src={formData.featuredImage} 
-                      alt="Prévia da imagem" 
-                      className="max-h-32 max-w-full object-contain"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://placehold.co/600x400?text=Imagem+Inválida';
+                <div className="space-y-2">
+                  <Label htmlFor="summary">Resumo</Label>
+                  <Textarea
+                    id="summary"
+                    name="summary"
+                    value={formData.summary}
+                    onChange={handleChange}
+                    placeholder="Resumo do artigo"
+                    rows={2}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="content">Conteúdo</Label>
+                  <div className="min-h-[200px] border rounded-md">
+                    <ReactQuill
+                      id="content"
+                      value={formData.content}
+                      onChange={(value) => setFormData(prev => ({ ...prev, content: value }))}
+                      placeholder="Conteúdo do artigo"
+                      theme="snow"
+                      modules={{
+                        toolbar: [
+                          [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                          ['bold', 'italic', 'underline', 'strike'],
+                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          [{ 'indent': '-1'}, { 'indent': '+1' }],
+                          [{ 'align': [] }],
+                          ['link', 'image'],
+                          ['clean']
+                        ]
                       }}
+                      formats={[
+                        'header',
+                        'bold', 'italic', 'underline', 'strike',
+                        'list', 'bullet', 'indent',
+                        'link', 'image', 'align'
+                      ]}
+                      className="h-[300px] mb-12"
                     />
-                  ) : (
-                    <div className="text-center text-gray-500">
-                      <ImageIcon className="h-10 w-10 mx-auto mb-2" />
-                      <p className="text-sm">Prévia da imagem</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Coluna Direita - Configurações */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="categoryId">Categoria</Label>
+                  <Select 
+                    value={formData.categoryId} 
+                    onValueChange={handleSelectChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(category => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="featuredImage">Imagem Destacada</Label>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="featuredImage"
+                          name="featuredImage"
+                          value={formData.featuredImage}
+                          onChange={handleChange}
+                          placeholder="URL da imagem ou faça upload"
+                          className="flex-1"
+                        />
+                        <input 
+                          type="file" 
+                          ref={fileInputRef}
+                          className="hidden" 
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                        />
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadState.isUploading}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload
+                        </Button>
+                      </div>
+                      
+                      {uploadState.isUploading && (
+                        <div className="mt-2">
+                          <Progress value={uploadState.progress} className="h-2" />
+                          <p className="text-xs text-gray-500 mt-1">Enviando imagem...</p>
+                        </div>
+                      )}
+                      
+                      {uploadState.error && (
+                        <p className="text-xs text-red-500 mt-1">{uploadState.error}</p>
+                      )}
                     </div>
-                  )}
+                    
+                    <div className="flex items-center justify-center border rounded-md p-4 h-40">
+                      {formData.featuredImage ? (
+                        <img 
+                          src={formData.featuredImage} 
+                          alt="Prévia da imagem" 
+                          className="max-h-32 max-w-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://placehold.co/600x400?text=Imagem+Inválida';
+                          }}
+                        />
+                      ) : (
+                        <div className="text-center text-gray-500">
+                          <ImageIcon className="h-10 w-10 mx-auto mb-2" />
+                          <p className="text-sm">Prévia da imagem</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="published">Publicar Artigo</Label>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="published"
+                      checked={formData.published}
+                      onCheckedChange={handleSwitchChange}
+                    />
+                    <span>{formData.published ? 'Publicado' : 'Rascunho'}</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -98,28 +98,46 @@ exports.getDashboardStats = async (req, res) => {
     }
     
     // Obter estatísticas de comentários
-    const commentStats = {
+    let commentStats = {
       total: 0,
       approved: 0,
       pending: 0,
-      spam: 0
+      rejected: 0
     };
-    
-    const totalComments = await Comment.count();
-    const approvedComments = await Comment.count({ where: { status: 'approved' } });
-    const pendingComments = await Comment.count({ where: { status: 'pending' } });
-    const spamComments = await Comment.count({ where: { status: 'spam' } });
-    
-    commentStats.total = totalComments;
-    commentStats.approved = approvedComments;
-    commentStats.pending = pendingComments;
-    commentStats.spam = spamComments;
+
+    try {
+      // Verificar se a coluna status existe na tabela comments
+      const commentAttributes = await sequelize.query(
+        "SHOW COLUMNS FROM comments LIKE 'status'",
+        { type: sequelize.QueryTypes.SELECT }
+      );
+      
+      const statusColumnExists = commentAttributes.length > 0;
+      
+      // Contar total de comentários
+      const totalComments = await Comment.count();
+      commentStats.total = totalComments;
+      
+      // Se a coluna status existir, contar por status
+      if (statusColumnExists) {
+        const approvedComments = await Comment.count({ where: { status: 'approved' } });
+        const pendingComments = await Comment.count({ where: { status: 'pending' } });
+        const rejectedComments = await Comment.count({ where: { status: 'rejected' } });
+        
+        commentStats.approved = approvedComments;
+        commentStats.pending = pendingComments;
+        commentStats.rejected = rejectedComments;
+      }
+    } catch (error) {
+      console.error('[BACKEND] Erro ao obter estatísticas de comentários:', error);
+      // Continue com a execução, apenas com valores zerados para comentários
+    }
     
     // Calcular percentuais de comentários
     const commentPercentages = {
-      approved: totalComments > 0 ? Math.round((approvedComments / totalComments) * 100) : 0,
-      pending: totalComments > 0 ? Math.round((pendingComments / totalComments) * 100) : 0,
-      spam: totalComments > 0 ? Math.round((spamComments / totalComments) * 100) : 0
+      approved: commentStats.total > 0 ? Math.round((commentStats.approved / commentStats.total) * 100) : 0,
+      pending: commentStats.total > 0 ? Math.round((commentStats.pending / commentStats.total) * 100) : 0,
+      rejected: commentStats.total > 0 ? Math.round((commentStats.rejected / commentStats.total) * 100) : 0
     };
     
     // Obter contagem de artigos por categoria

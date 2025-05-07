@@ -115,13 +115,49 @@ export const updateSettings = async (settings: Record<string, string>): Promise<
       throw new Error('Usuário não autenticado');
     }
     
+    // Agrupar as configurações por grupo (aparência, geral, conteúdo)
+    const groupedSettings: Record<string, Record<string, string>> = {};
+    
+    // Configurações gerais
+    groupedSettings.general = {
+      site_title: settings.site_title || '',
+      site_description: settings.site_description || '',
+      site_url: settings.site_url || '',
+      admin_email: settings.admin_email || '',
+      language: settings.language || '',
+      timezone: settings.timezone || ''
+    };
+    
+    // Configurações de conteúdo
+    groupedSettings.content = {
+      posts_per_page: settings.posts_per_page || '',
+      enable_comments: settings.enable_comments || '',
+      moderate_comments: settings.moderate_comments || '',
+      enable_rss: settings.enable_rss || '',
+      enable_social_sharing: settings.enable_social_sharing || ''
+    };
+    
+    // Configurações de aparência
+    groupedSettings.appearance = {
+      theme: settings.theme || '',
+      primary_color: settings.primary_color || '',
+      primary_text_color: settings.primary_text_color || '',
+      content_text_color: settings.content_text_color || '',
+      logo_url: settings.logo_url || '',
+      favicon_url: settings.favicon_url || '',
+      header_start_color: settings.header_start_color || '',
+      header_end_color: settings.header_end_color || '',
+      footer_start_color: settings.footer_start_color || '',
+      footer_end_color: settings.footer_end_color || ''
+    };
+    
     const response = await fetch(`${API_URL}/settings`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ settings })
+      body: JSON.stringify({ settings: groupedSettings })
     });
     
     if (!response.ok) {

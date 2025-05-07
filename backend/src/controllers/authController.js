@@ -32,7 +32,7 @@ exports.register = async (req, res) => {
       email,
       phone,
       password,
-      role: 'subscriber' // Por padrão, todos os novos usuários são leitores
+      role: 'subscriber' // Por padrão, todos os novos usuários são leitores/assinantes
     });
 
     // Gerar token JWT

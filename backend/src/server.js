@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const { sequelize } = require('./models');
+const { sequelize, Setting } = require('./models');
 
 // Importação das rotas
 const userRoutes = require('./routes/userRoutes');
@@ -15,7 +15,7 @@ const reactionRoutes = require('./routes/reactionRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const seedRoutes = require('./routes/seedRoutes');
 const statsRoutes = require('./routes/statsRoutes');
-const settingRoutes = require('./routes/settingRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
 const pageRoutes = require('./routes/pageRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const favoriteRoutes = require('./routes/favoriteRoutes');
@@ -49,6 +49,9 @@ app.get('/api/check-file', (req, res) => {
   }
 });
 
+// Rotas de configurações
+app.use('/api/settings', settingsRoutes);
+
 // Rotas
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -59,7 +62,6 @@ app.use('/api/reactions', reactionRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/stats', statsRoutes);
-app.use('/api/settings', settingRoutes);
 app.use('/api/pages', pageRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/favorites', favoriteRoutes);

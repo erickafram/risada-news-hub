@@ -1,10 +1,23 @@
 const sequelize = require('../config/database');
+
+// Importar todos os modelos
 const User = require('./User');
 const Category = require('./Category');
 const Article = require('./Article');
 const Comment = require('./Comment');
 const Setting = require('./Setting');
 const Page = require('./Page');
+
+// Exportar todos os modelos
+module.exports = {
+  sequelize,
+  User,
+  Category,
+  Article,
+  Comment,
+  Setting,
+  Page
+};
 
 // Definindo as associações entre os modelos
 Article.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
