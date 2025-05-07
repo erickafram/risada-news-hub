@@ -120,6 +120,19 @@ const AdminDashboard = () => {
           </div>
         </div>
         
+        {/* Editor de Layout */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Editor de Layout</h3>
+            <Link to="/admin/page-layout" className="text-primary hover:underline">
+              Editar Layout da Página Inicial
+            </Link>
+          </div>
+          <div className="text-gray-600">
+            Configure a aparência da sua página inicial com grids, categorias e posts
+          </div>
+        </div>
+        
         {/* Cards de estatísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow">

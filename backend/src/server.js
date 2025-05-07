@@ -19,9 +19,10 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const pageRoutes = require('./routes/pageRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const favoriteRoutes = require('./routes/favoriteRoutes');
+const pageLayoutRoutes = require('./routes/pageLayoutRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 // Middlewares
 app.use(cors());
@@ -64,6 +65,7 @@ app.use('/api/seed', seedRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/pages', pageRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/page-layouts', pageLayoutRoutes);
 app.use('/api/favorites', favoriteRoutes);
 
 // Rota de teste

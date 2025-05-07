@@ -11,6 +11,8 @@ import { Heart, MessageCircle } from 'lucide-react';
 import ScrollToTop from '@/components/ui/scroll-to-top';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { Newspaper as NewspaperIcon } from 'lucide-react';
+import DynamicLayout from '@/components/DynamicLayout';
+import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const [featuredNews, setFeaturedNews] = useState<NewsItem[]>([]);
@@ -23,6 +25,9 @@ const Index = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search');
   const { settings } = useSiteSettings();
+  const [layout, setLayout] = useState<any[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [showDefaultLayout, setShowDefaultLayout] = useState(true);
   
   // Função para converter dados da API para o formato NewsItem
   const mapArticleToNewsItem = (article: any): NewsItem => ({
@@ -86,8 +91,38 @@ const Index = () => {
     }
   };
 
-  // Buscar artigos
+  // Buscar layout ativo e artigos
   useEffect(() => {
+    const fetchActiveLayout = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        console.log("[DEBUG] Fetching active layout from:", `${apiUrl}/api/page-layouts/active`);
+        
+        const response = await fetch(`${apiUrl}/api/page-layouts/active`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("[DEBUG] Active layout API response:", data);
+          
+          // Check if there's a valid layout structure in the response
+          if (data && data.layout && Array.isArray(data.layout) && data.layout.length > 0) {
+            console.log("[DEBUG] Valid layout found, applying custom layout...");
+            setLayout(data.layout);
+            setShowDefaultLayout(false);
+          } else {
+            console.log("[DEBUG] No valid layout in response, using default layout");
+            setShowDefaultLayout(true);
+          }
+        } else {
+          console.error("[DEBUG] Error fetching layout:", response.status, response.statusText);
+          setShowDefaultLayout(true);
+        }
+      } catch (error) {
+        console.error('[DEBUG] Exception fetching active layout:', error);
+        setShowDefaultLayout(true);
+      }
+    };
+
     const fetchArticles = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -202,199 +237,329 @@ const Index = () => {
       }
     };
 
+    // Buscar categorias
+    const fetchCategories = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${apiUrl}/api/categories`);
+        if (response.ok) {
+          const data = await response.json();
+          setCategories(data);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar categorias:', error);
+      }
+    };
+
+    fetchActiveLayout();
     fetchArticles();
+    fetchCategories();
   }, [searchQuery]);
+
+  // Add effect to set default layout state based on layout content
+  useEffect(() => {
+    if (layout && layout.length > 0) {
+      setShowDefaultLayout(false);
+    }
+  }, [layout]);
+
+  // Função atualizada para salvar o layout
+  const handleLayoutSave = async (savedLayout: any[]) => {
+    console.log('[DEBUG] Layout recebido para salvar:', savedLayout);
+    
+    // Update local layout state
+    setLayout(savedLayout);
+    
+    // Set to show custom layout, not default
+    setShowDefaultLayout(false);
+    
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      // First get the active layout to check if it exists
+      console.log('[DEBUG] Verificando layout ativo existente...');
+      const getResponse = await fetch(`${apiUrl}/api/page-layouts/active`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const layoutData = await getResponse.json();
+      console.log('[DEBUG] Layout atual recuperado:', layoutData);
+      
+      // Choose correct method (POST for new, PUT for update)
+      const method = layoutData && layoutData.id ? 'PUT' : 'POST';
+      const url = layoutData && layoutData.id 
+        ? `${apiUrl}/api/page-layouts/${layoutData.id}`
+        : `${apiUrl}/api/page-layouts`;
+        
+      console.log(`[DEBUG] Enviando requisição ${method} para ${url}`);
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          name: 'Layout Atual',
+          layout: savedLayout,
+          isActive: true
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erro ao salvar layout: ${response.status} ${response.statusText}`);
+      }
+      
+      const savedData = await response.json();
+      console.log('[DEBUG] Layout salvo com sucesso:', savedData);
+      
+      // Force reload after save to ensure layout is properly loaded from server
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
+      toast({
+        title: "Layout salvo",
+        description: "O layout foi salvo com sucesso e a página será recarregada.",
+      });
+    } catch (error) {
+      console.error('[DEBUG] Erro ao salvar layout:', error);
+      
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar layout",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao salvar o layout",
+      });
+    }
+  };
+
+  // Adicionar useEffect para logs
+  useEffect(() => {
+    console.log('Layout atual:', layout);
+    console.log('Mostrar layout padrão:', showDefaultLayout);
+  }, [layout, showDefaultLayout]);
 
   return (
     <Layout>
-      <SiteTitle />
       <div className="container mx-auto px-4 py-8">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2">Carregando notícias...</span>
-          </div>
-        ) : (
-          <>
-            {/* Removida a seção Hero com o título do site */}
-
-            {/* Mostrar título de pesquisa se houver uma consulta */}
-            {searchQuery && (
-              <div className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h1 className="text-3xl font-bold mb-2 flex items-center">
-                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 w-1 h-8 rounded mr-3"></span>
-                  Resultados da pesquisa: "{searchQuery}"
-                </h1>
-                <p className="text-gray-600">
-                  {allArticles.length === 0 
-                    ? "Nenhum resultado encontrado. Tente outra pesquisa." 
-                    : `Encontramos ${allArticles.length} resultado${allArticles.length !== 1 ? 's' : ''}.`}
-                </p>
-              </div>
+        <div className="flex justify-between items-center mb-6">
+          <SiteTitle />
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar notícias..."
+                className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+                value={searchQuery || ''}
+                onChange={(e) => {
+                  const newQuery = e.target.value;
+                  searchParams.set('search', newQuery);
+                  window.location.search = `?${searchParams.toString()}`;
+                }}
+              />
+              {searchQuery && (
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  onClick={() => {
+                    searchParams.delete('search');
+                    window.location.search = `?${searchParams.toString()}`;
+                  }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            {isAuthenticated && (
+              <Link to="/dashboard" className="text-primary hover:underline">
+                Dashboard
+              </Link>
             )}
-
-            {/* Featured News Grid - mostrar apenas se não for uma pesquisa */}
-            {!searchQuery && featuredNews.length > 0 && (
-              <section className="mb-12">
-                {/* Removido o título "Destaques" */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden rounded-xl shadow-md">
-                  {/* Notícia principal em destaque */}
-                  {featuredNews.length > 0 && (
-                    <div className="lg:col-span-8 relative group">
-                      <Link to={`/article/${featuredNews[0].id}`} className="block relative overflow-hidden h-[450px]">
-                        <img 
-                          src={featuredNews[0].imageUrl} 
-                          alt={featuredNews[0].title} 
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-70"></div>
-                        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                          <div className="mb-2">
-                            <span className="bg-purple-600 text-white text-xs font-medium px-2.5 py-1 rounded">
-                              {featuredNews[0].category}
-                            </span>
-                            <span className="ml-2 text-xs opacity-75">
-                              {new Date(featuredNews[0].publishedAt).toLocaleDateString('pt-BR', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric'
-                              })}
-                            </span>
-                          </div>
-                          <h2 className="text-2xl md:text-3xl font-bold mb-2 line-clamp-3 hover:text-purple-300 transition-colors">
-                            {featuredNews[0].title}
-                          </h2>
-                          <p className="text-gray-200 line-clamp-2 mb-3">{featuredNews[0].excerpt}</p>
-                          <div className="flex items-center gap-4 text-sm">
-                            <span className="flex items-center gap-1">
-                              <Heart className="w-4 h-4" />
-                              {featuredNews[0].likes || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MessageCircle className="w-4 h-4" />
-                              {featuredNews[0].comments || 0}
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    </div>
-                  )}
-                  
-                  {/* Notícias secundárias */}
-                  <div className="lg:col-span-4 grid grid-rows-2 gap-4">
-                    {featuredNews.slice(1, 3).map((news, index) => (
-                      <Link key={news.id} to={`/article/${news.id}`} className="relative group overflow-hidden h-[220px] block">
-                        <img 
-                          src={news.imageUrl} 
-                          alt={news.title} 
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-70"></div>
-                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                          <div className="mb-1">
-                            <span className="bg-purple-600 text-white text-xs font-medium px-2 py-0.5 rounded">
-                              {news.category}
-                            </span>
-                          </div>
-                          <h3 className="text-lg font-bold line-clamp-2 hover:text-purple-300 transition-colors">
-                            {news.title}
-                          </h3>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* Layout principal com conteúdo e sidebar */}
-            {!searchQuery && (
-              <div className="flex flex-col lg:flex-row gap-8">
-                {/* Conteúdo principal (70%) */}
-                <div className="lg:w-[70%]">
-                  {/* All Articles */}
-                  {allArticles.length > 0 && (
-                    <section>
-                      <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b border-gray-200 pb-2 flex items-center">
-                        <Newspaper className="mr-2 h-5 w-5 text-purple-600" />
-                        Últimas Notícias
-                      </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {allArticles.map((news) => (
-                          <NewsCard key={news.id} news={news} />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                </div>
-
-                {/* Sidebar (30%) */}
-                {(mostReadArticles.length > 0 || mostCommentedArticles.length > 0) && (
-                  <div className="lg:w-[30%]">
-                    {/* Most Read Articles */}
-                    {mostReadArticles.length > 0 && (
-                      <div className="border border-gray-100 rounded-lg p-6 mb-8 shadow-sm bg-white hover:shadow-md transition-shadow">
-                        <h3 className="text-xl font-bold mb-4 text-gray-800 border-b border-gray-200 pb-2 flex items-center">
-                          <TrendingUp className="mr-2 h-5 w-5 text-purple-600" />
-                          Mais Lidos
-                        </h3>
-                        <div className="space-y-4">
-                          {mostReadArticles.map((news) => (
-                            <NewsCard key={news.id} news={news} compact={true} sidebar={true} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Most Commented Articles */}
-                    {mostCommentedArticles.length > 0 && (
-                      <div className="border border-gray-100 rounded-lg p-6 shadow-sm bg-white hover:shadow-md transition-shadow">
-                        <h3 className="text-xl font-bold mb-4 text-gray-800 border-b border-gray-200 pb-2 flex items-center">
-                          <MessageSquare className="mr-2 h-5 w-5 text-purple-600" />
-                          Mais Comentados
-                        </h3>
-                        <div className="space-y-4">
-                          {mostCommentedArticles.map((news) => (
-                            <NewsCard key={news.id} news={news} compact={true} sidebar={true} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Resultados da pesquisa */}
-            {searchQuery && allArticles.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {allArticles.map((news) => (
-                  <NewsCard key={news.id} news={news} />
-                ))}
-              </div>
-            )}
-
-            {/* Show message if no news */}
-            {featuredNews.length === 0 && allArticles.length === 0 && (
-              <div className="text-center py-12 border border-gray-100 rounded-lg shadow-sm bg-white">
-                <Newspaper className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                <h2 className="text-2xl font-bold mb-4 text-gray-800">Nenhuma notícia disponível</h2>
-                <p className="text-gray-600">Volte mais tarde para conferir as novidades!</p>
-                {isAdmin && (
-                  <p className="mt-4">
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => {
+                    setIsEditMode(!isEditMode);
+                    // Se estiver saindo do modo de edição, voltar para o layout padrão
+                    if (isEditMode) {
+                      setShowDefaultLayout(true);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded text-sm font-medium ${
+                    isEditMode 
+                      ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                      : 'bg-primary/10 text-primary hover:bg-primary/20'
+                  }`}
+                >
+                  {isEditMode ? 'Sair do modo edição' : 'Editar Layout'}
+                </button>
+                {isEditMode && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const newValue = !showDefaultLayout;
+                        console.log('Mudando para mostrar layout padrão:', newValue);
+                        setShowDefaultLayout(newValue);
+                      }}
+                      className="px-3 py-1.5 rounded text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200"
+                    >
+                      {showDefaultLayout ? 'Ver layout personalizado' : 'Ver layout padrão'}
+                    </button>
                     <Link to="/admin/article/new" className="text-purple-600 hover:text-purple-800 hover:underline font-medium">
                       Criar um novo artigo
                     </Link>
-                  </p>
+                  </>
                 )}
-              </div>
+              </>
             )}
-          </>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          isAuthenticated && isAdmin && isEditMode ? (
+            // Admin in edit mode
+            <DynamicLayout
+              layout={layout}
+              isEditMode={true}
+              onLayoutChange={setLayout}
+              onSave={handleLayoutSave}
+            />
+          ) : showDefaultLayout ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
+                <div className="md:col-span-8">
+                  {/* Featured News - 1 large, 2 small */}
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-bold mb-4">Destaques</h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                      {/* Left side - one large article */}
+                      <div className="lg:col-span-5 flex">
+                        {featuredNews.length > 0 && (
+                          <div className="w-full h-full rounded-lg overflow-hidden shadow-md">
+                            <NewsCard article={featuredNews[0]} />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Right side - two smaller articles */}
+                      <div className="lg:col-span-7">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+                          {featuredNews.slice(1, 3).map((article, i) => (
+                            <div key={article.id} className="h-full rounded-lg overflow-hidden shadow-md">
+                              <NewsCard article={article} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Latest News Grid */}
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-bold mb-4">Últimas Notícias</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {allArticles.slice(0, 6).map((article, i) => (
+                        <div key={article.id} className="rounded-lg overflow-hidden shadow-md">
+                          <NewsCard article={article} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="md:col-span-4">
+                  {/* Sidebar - Mais Lidos */}
+                  <div className="mb-8">
+                    <h2 className="text-xl font-bold mb-4 flex items-center">
+                      <span className="text-purple-600 mr-2">↗</span> Mais Lidos
+                    </h2>
+                    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-100">
+                      <div className="space-y-3">
+                        {mostReadArticles.map((article) => (
+                          <div key={article.id} className="border-b border-gray-100 pb-3 last:border-b-0">
+                            <Link to={`/article/${article.id}`} className="hover:text-primary flex items-center gap-2">
+                              <div className="w-12 h-12 flex-shrink-0">
+                                <img 
+                                  src={article.imageUrl} 
+                                  alt={article.title} 
+                                  className="w-full h-full object-cover rounded-full"
+                                />
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm line-clamp-2">{article.title}</p>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                  <span className="flex items-center">
+                                    <Heart className="h-3 w-3 mr-1" />
+                                    {article.likes || 0}
+                                  </span>
+                                  <span className="flex items-center">
+                                    <MessageCircle className="h-3 w-3 mr-1" />
+                                    {article.comments || 0}
+                                  </span>
+                                </div>
+                              </div>
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sidebar - Mais Comentados */}
+                  <div className="mb-8">
+                    <h2 className="text-xl font-bold mb-4 flex items-center">
+                      <span className="text-purple-600 mr-2">💬</span> Mais Comentados
+                    </h2>
+                    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-100">
+                      <div className="space-y-3">
+                        {mostCommentedArticles.map((article) => (
+                          <div key={article.id} className="border-b border-gray-100 pb-3 last:border-b-0">
+                            <Link to={`/article/${article.id}`} className="hover:text-primary flex items-center gap-2">
+                              <div className="w-12 h-12 flex-shrink-0">
+                                <img 
+                                  src={article.imageUrl} 
+                                  alt={article.title} 
+                                  className="w-full h-full object-cover rounded-full"
+                                />
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm line-clamp-2">{article.title}</p>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                  <span className="flex items-center">
+                                    <Heart className="h-3 w-3 mr-1" />
+                                    {article.likes || 0}
+                                  </span>
+                                  <span className="flex items-center">
+                                    <MessageCircle className="h-3 w-3 mr-1" />
+                                    {article.comments || 0}
+                                  </span>
+                                </div>
+                              </div>
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            // Custom layout in view mode for everyone
+            <DynamicLayout
+              layout={layout}
+              isEditMode={false}
+            />
+          )
         )}
+
+        <ScrollToTop />
       </div>
-      
-      {/* Botão para voltar ao topo */}
-      <ScrollToTop />
     </Layout>
   );
 };

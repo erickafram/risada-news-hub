@@ -30,6 +30,7 @@ import UsersPage from "./pages/admin/UsersPage";
 import PagesListPage from "./pages/admin/PagesListPage";
 import PageForm from "./pages/admin/PageForm";
 import PageView from "./pages/PageView";
+import PageLayoutEditor from "./pages/admin/PageLayoutEditor";
 import { HelmetProvider } from "react-helmet-async";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,11 @@ const App = () => (
             <Route path="/admin/news/edit/:id" element={
               <ProtectedRoute requireAdmin={true}>
                 <ArticleForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/page-layout" element={
+              <ProtectedRoute requireAdmin={true}>
+                <PageLayoutEditor />
               </ProtectedRoute>
             } />
             <Route path="/admin/analytics" element={

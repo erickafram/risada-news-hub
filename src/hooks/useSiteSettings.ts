@@ -39,16 +39,16 @@ export const useSiteSettings = () => {
           timezone: 'America/Sao_Paulo',
         };
         
-        // Preencher com os valores do servidor
-        data.forEach((setting: { key: string; value: string }) => {
-          if (setting.key === 'site_title') settingsObj.siteTitle = setting.value;
-          if (setting.key === 'site_description') settingsObj.siteDescription = setting.value;
-          if (setting.key === 'site_url') settingsObj.siteUrl = setting.value;
-          if (setting.key === 'admin_email') settingsObj.adminEmail = setting.value;
-          if (setting.key === 'language') settingsObj.language = setting.value;
-          if (setting.key === 'timezone') settingsObj.timezone = setting.value;
-          if (setting.key === 'logo_url') settingsObj.logoUrl = setting.value;
-        });
+        // Preencher com os valores do servidor - data é um objeto agora, não um array
+        if (data) {
+          if (data.site_title) settingsObj.siteTitle = data.site_title;
+          if (data.site_description) settingsObj.siteDescription = data.site_description;
+          if (data.site_url) settingsObj.siteUrl = data.site_url;
+          if (data.admin_email) settingsObj.adminEmail = data.admin_email;
+          if (data.language) settingsObj.language = data.language;
+          if (data.timezone) settingsObj.timezone = data.timezone;
+          if (data.logo_url) settingsObj.logoUrl = data.logo_url;
+        }
         
         setSettings(settingsObj);
       } catch (err) {
